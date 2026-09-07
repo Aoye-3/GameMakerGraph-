@@ -14,3 +14,17 @@ def test_cli_build_and_search_emit_machine_readable_json(tmp_path: Path, capsys:
     assert main(["search", "dash", str(tmp_path)]) == 0
     search_output = json.loads(capsys.readouterr().out)
     assert search_output["results"][0]["source"] == "design.md"
+
+
+def test_cli_context_and_impact_can_run_without_codegraph(tmp_path: Path, capsys: object) -> None:
+    (tmp_path / "design.md").write_text("# Movement\n\nDash and jump.\n", "utf-8")
+    main(["build", str(tmp_path)])
+    capsys.readouterr()
+
+    assert main(["context", "movement", str(tmp_path), "--no-codegraph"]) == 0
+    context = json.loads(capsys.readouterr().out)
+    assert context["nodes"][0]["source"] == "design.md"
+
+    assert main(["impact", "file:design.md", str(tmp_path), "--no-codegraph"]) == 0
+    impact = json.loads(capsys.readouterr().out)
+    assert impact["root"] == "file:design.md"

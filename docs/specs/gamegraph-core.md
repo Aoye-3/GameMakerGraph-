@@ -2,9 +2,9 @@
 
 ## Status
 
-- Version: `0.1`
+- Version: `0.2`
 - State: first executable slice
-- Scope: local project discovery, disposable graph, overview, search, freshness
+- Scope: local project discovery, disposable graph, overview, search, freshness, context, impact
 
 ## Problem
 
@@ -80,12 +80,25 @@ revision 是按规范化相对路径和文件内容计算的 SHA-256。相同输
 
 对比当前原生文件 revision 与索引 revision，返回 `missing`、`current` 或 `stale`。
 
+### `context`
+
+按查询词选择种子节点，沿非 `contains` 语义关系生成有深度和数量上限的邻域。旧图为 `stale` 时
+必须返回 `blocked`，不得把旧关系交给 Agent。CodeGraph 可用时，结果附加规范化的代码符号；
+CodeGraph 失败不能破坏 GameGraph 查询。
+
+### `impact`
+
+按稳定节点 ID 返回有界的双向语义邻域，不通过项目的 `contains` 边扩散到所有文件。调用者明确
+提供代码符号时，可以附加 CodeGraph 的符号级影响结果。
+
 ## Command line
 
 ```text
 gamegraph build [PROJECT]
 gamegraph overview [PROJECT]
 gamegraph search QUERY [PROJECT]
+gamegraph context QUERY [PROJECT] [--no-codegraph]
+gamegraph impact ROOT [PROJECT] [--code-symbol SYMBOL] [--no-codegraph]
 gamegraph status [PROJECT]
 ```
 
@@ -99,11 +112,12 @@ gamegraph status [PROJECT]
 4. 相同输入连续构建产生等价图；
 5. 修改已索引文件后状态变为 `stale`；
 6. 索引自身、隐藏目录和常见依赖目录不会进入图；
-7. Core 没有 MCP、游戏项目记录或重型交付流程依赖。
+7. context 和 impact 保持有界，且不会静默消费 stale 图；
+8. CodeGraph 作为可选 Provider，不读取其私有数据库；
+9. Core 没有 MCP、游戏项目记录或重型交付流程依赖。
 
 ## Deferred
 
-- bounded task context 与多跳 impact 查询；
 - 文档缺口和实现漂移规则；
 - CodeGraph 或引擎 MCP 数据适配；
 - watch 模式与增量更新；

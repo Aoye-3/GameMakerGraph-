@@ -14,8 +14,8 @@ GameMakerGraph 帮助 Codex、Claude Code 等通用编程 Agent 在修改游戏�
 它为本地 Vibe Game 开发提供结构化项目理解、文档搭建，以及少量按需启用的开发 Skill。
 
 > **状态：产品方向已经确定，正在基于上一轮 GameMakerAgent 开发成果做收窄式迁移。**
-> GameGraph Core 的第一条可运行链路已经完成：本地扫描、建图、概览、搜索和新鲜度检查；
-> 文档框架、任务上下文、影响分析和集成层继续按增量切片迁移。重型生产编排降为可选能力。
+> `0.2.0` 已完成本地扫描、建图、概览、搜索、新鲜度、任务上下文、影响分析和 CodeGraph CLI
+> 组合；文档检查和自动搭建继续按增量切片迁移。重型生产编排降为可选能力。
 
 ## 核心价值
 
@@ -38,7 +38,7 @@ GameMakerGraph 的核心产品是 **GameGraph**：一份从本地项目重建、
             └─ Skills：搭建文档、讨论方向、检查结果
 ```
 
-我们借鉴 [CodeGraph](https://github.com/codegraph-ai/CodeGraph) 的产品思路：让 Agent 优先查询
+我们借鉴 [CodeGraph](https://github.com/colbymchenry/codegraph) 的产品思路：让 Agent 优先查询
 结构化关系，而不是反复 grep 和读取大量文件。但两者解决的问题不同：
 
 | CodeGraph | GameMakerGraph |
@@ -147,11 +147,36 @@ python -m pip install -e .
 gamegraph build /path/to/game
 gamegraph overview /path/to/game
 gamegraph search "shop economy" /path/to/game
+gamegraph context "add a shop event" /path/to/game
+gamegraph impact "file:scenes/shop.tscn" /path/to/game --code-symbol open_shop
 gamegraph status /path/to/game
 ```
 
 当前索引识别 Markdown 文档与标题、常见代码/配置/数据/资产文件、Markdown 相对链接，以及
 Godot 文件中的 `res://` 引用。输出为 JSON；派生索引保存在目标项目的 `.gamemakergraph/`。
+
+### 与 CodeGraph 直接组合
+
+GameMakerGraph 不内嵌或复刻 CodeGraph。安装并初始化上游 CodeGraph 后，`context` 会自动检测
+项目内的 `.codegraph/`，通过官方 JSON CLI 合并符号级结果：
+
+```bash
+# CodeGraph 的安装方式以其官方文档为准
+codegraph init /path/to/game
+gamegraph build /path/to/game
+gamegraph context "how is player inventory implemented" /path/to/game
+```
+
+`impact` 默认返回 GameGraph 的玩法/文档/资源影响范围；提供 `--code-symbol` 时同时查询代码影响：
+
+```bash
+gamegraph impact "file:docs/inventory.md" /path/to/game --code-symbol InventoryService
+```
+
+CodeGraph 未安装、未初始化或索引有待同步变更时，结果会明确返回 `unavailable`、`uninitialized`
+或 `stale`，GameGraph 本身仍可使用。用 `--no-codegraph` 可以显式关闭组合查询。适配契约见
+[`docs/contracts/codegraph-provider.md`](docs/contracts/codegraph-provider.md)，上游源码结构与集成取舍见
+[`CodeGraph 源码分析`](docs/research/codegraph-source-analysis-2026-09-07.md)。
 
 `codegraph-documentation` Skill 位于
 [`plugins/gamemaker-graph/skills/codegraph-documentation`](plugins/gamemaker-graph/skills/codegraph-documentation/SKILL.md)，
@@ -232,3 +257,10 @@ Godot 文件中的 `res://` 引用。输出为 JSON；派生索引保存在目�
 
 抽离完成的标准不是“替换所有旧名称”，而是独立开发者无需进入重型流程，就能可靠地理解项目、
 搭建文档、讨论方向并继续使用现有工具开发。
+
+## 致谢
+
+特别感谢 [Colby Mchenry 的 CodeGraph](https://github.com/colbymchenry/codegraph)。它提供了本地优先
+的符号、调用链和代码影响分析，也启发了 GameMakerGraph 的“Graph before grep”体验。
+GameMakerGraph 没有复制 CodeGraph 源码；我们通过其公开 CLI/MCP 边界组合能力，并专注补充玩法、
+文档、场景、资源和开发意图之间的游戏语义层。

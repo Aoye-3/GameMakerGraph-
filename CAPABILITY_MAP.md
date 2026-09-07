@@ -81,6 +81,8 @@ gamegraph-core
 - 第一个真实适配目标为 TapTapMakerMCP；
 - 第二个真实适配目标为 Godot MCP；
 - 工具不可用时，核心查询和文档能力仍然工作。
+- CodeGraph 首版通过 `status/query/impact --json` 组合，不读取其 SQLite 或复制解析器；
+- CodeGraph Provider 已完成本地 CLI 适配，MCP 原生桥接留待真实 Agent 宿主验证。
 
 ### `delivery-evidence`
 

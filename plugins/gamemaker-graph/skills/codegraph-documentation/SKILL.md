@@ -21,7 +21,7 @@ When `.codegraph/` and CodeGraph tools are available, prefer architecture explor
 
 1. Check GameGraph status. Rebuild its disposable index when it is missing or stale and that local derived-file write is within the task scope.
 2. Query GameGraph for the project overview and the feature or system being documented.
-3. Ask CodeGraph for the relevant architecture slice, entry points, symbols, callers, dependencies, and tests. Keep the exploration bounded to the requested deliverable.
+3. Use `gamegraph context` for the combined gameplay/document/code seed. Ask CodeGraph directly for deeper architecture, entry points, callers, dependencies, and tests only when the deliverable needs them.
 4. Inspect the source files that support important claims. Ask the user only when creative intent, product policy, or an architecture decision cannot be established from sources.
 5. Select the smallest document set justified by the repository. Read [references/document-system.md](references/document-system.md) when choosing or structuring multiple documents.
 6. Create or update local Markdown documents. Preserve existing conventions and links; do not overwrite confirmed design statements with graph inference.

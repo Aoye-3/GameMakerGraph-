@@ -2,7 +2,7 @@
 
 ## 状态
 
-Phase 0 complete. Phase 1 first executable slice complete; context and impact remain pending.
+Phase 0 complete. Phase 1 query loop complete; documentation inspection remains next.
 
 ## 原则
 
@@ -27,14 +27,15 @@ Phase 0 complete. Phase 1 first executable slice complete; context and impact re
 - [x] 写 Core 规格并确认公共命令；
 - [x] 建立独立 Python 包和测试入口；
 - [x] 从 `project.py` 迁移文件扫描、manifest 和 revision；
-- [ ] 从 `project_map.py` 迁移图构建、影响查询和生命周期；
-- [ ] 从 `context.py` 迁移并简化任务局部上下文；
+- [x] 从 `project_map.py` 迁移并收窄图构建与影响查询；
+- [x] 从 `context.py` 迁移并简化任务局部上下文；
 - [x] 将 Markdown 文档提升为一等节点；
 - [x] 生成带来源和 revision 的确定性图；
-- [ ] 实现 overview、search、context、impact、status；
+- [x] 实现 overview、search、context、impact、status；
 - [x] 实现 build、overview、search、status；
 - [x] 实现可丢弃索引和 stale 检测；
 - [x] 首版内置最小 Godot `res://` 引用解析，不依赖 Godot MCP。
+- [x] 通过公开 JSON CLI 接入可选 CodeGraph Provider。
 
 验收：对两个不同结构的本地夹具建立等价可重建图，不依赖旧包或 MCP。
 
