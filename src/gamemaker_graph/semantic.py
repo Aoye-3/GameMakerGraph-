@@ -96,7 +96,7 @@ def _relative_path(root: Path, value: object) -> str | None:
     return candidate.as_posix()
 
 
-def _relationship_allowed(
+def relationship_allowed(
     source_kind: str,
     target_kind: str | None,
     edge_kind: str,
@@ -239,7 +239,7 @@ def parse_semantic_documents(project_root: Path) -> dict[str, Any]:
             source is None
             or kind not in SEMANTIC_EDGE_KINDS
             or (target is None and not target_is_file)
-            or not _relationship_allowed(
+            or not relationship_allowed(
                 source["kind"],
                 target["kind"] if target else None,
                 kind,

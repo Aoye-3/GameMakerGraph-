@@ -131,3 +131,53 @@ def test_invalid_semantic_relationship_is_warned_and_not_indexed(tmp_path: Path)
 
     assert semantic["edges"] == []
     assert any("Invalid semantic relationship" in warning for warning in semantic["warnings"])
+
+
+def test_complete_semantic_vocabulary_and_relationship_set_is_supported(tmp_path: Path) -> None:
+    script = tmp_path / "game.js"
+    script.write_text("export const state = {};", encoding="utf-8")
+    memory = tmp_path / "memory.md"
+    node_kinds = {
+        "feature": "feature",
+        "action": "player_action",
+        "state": "game_state",
+        "rule": "rule",
+        "milestone": "milestone",
+        "acceptance": "acceptance_criterion",
+        "decision": "decision",
+        "issue": "issue",
+        "evidence": "validation_evidence",
+    }
+    memory.write_text(
+        _controlled(
+            {
+                "nodes": [
+                    {"key": key, "kind": kind, "label": key.title()}
+                    for key, kind in node_kinds.items()
+                ],
+                "edges": [
+                    {"source": "feature", "target": "memory.md", "kind": "documents"},
+                    {"source": "feature", "target": "game.js", "kind": "implemented_by"},
+                    {"source": "feature", "target": "rule", "kind": "depends_on"},
+                    {"source": "action", "target": "state", "kind": "changes"},
+                    {"source": "acceptance", "target": "evidence", "kind": "validated_by"},
+                    {"source": "milestone", "target": "issue", "kind": "blocked_by"},
+                ],
+                "applied_plans": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    semantic = parse_semantic_documents(tmp_path)
+
+    assert {node["kind"] for node in semantic["nodes"]} == set(node_kinds.values())
+    assert {edge["kind"] for edge in semantic["edges"]} == {
+        "documents",
+        "implemented_by",
+        "depends_on",
+        "changes",
+        "validated_by",
+        "blocked_by",
+    }
+    assert semantic["warnings"] == []

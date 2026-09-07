@@ -18,7 +18,13 @@ from .graph import (
     project_revision,
     rebuild_graph,
 )
-from .semantic import END_MARKER, SEMANTIC_EDGE_KINDS, SEMANTIC_NODE_KINDS, START_MARKER
+from .semantic import (
+    END_MARKER,
+    SEMANTIC_EDGE_KINDS,
+    SEMANTIC_NODE_KINDS,
+    START_MARKER,
+    relationship_allowed,
+)
 
 SCHEMA_VERSION = "0.5"
 PROJECT_MEMORY = "docs/development/project-memory.md"
@@ -406,7 +412,12 @@ def _validate_plan(root: Path, plan: Mapping[str, Any]) -> dict[str, Any]:
     change = changes[0]
     if not isinstance(change, dict) or change.get("path") != PROJECT_MEMORY:
         raise ValueError(f"plan may only maintain {PROJECT_MEMORY}")
-    for node in change.get("nodes", []):
+    raw_nodes = change.get("nodes", [])
+    raw_edges = change.get("edges", [])
+    if not isinstance(raw_nodes, list) or not isinstance(raw_edges, list):
+        raise ValueError("plan nodes and edges must be arrays")
+    node_kinds: dict[str, str] = {}
+    for node in raw_nodes:
         if (
             not isinstance(node, dict)
             or node.get("kind") not in SEMANTIC_NODE_KINDS
@@ -416,9 +427,37 @@ def _validate_plan(root: Path, plan: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError("plan contains an invalid semantic node")
         if "path" in node and _relative_path(root, node["path"]) is None:
             raise ValueError("plan contains a non-relative evidence path")
-    for edge in change.get("edges", []):
-        if not isinstance(edge, dict) or edge.get("kind") not in SEMANTIC_EDGE_KINDS:
+        key = node["key"].strip().casefold()
+        if key in node_kinds:
+            raise ValueError("plan contains duplicate semantic keys")
+        node_kinds[key] = node["kind"]
+    for edge in raw_edges:
+        if (
+            not isinstance(edge, dict)
+            or edge.get("kind") not in SEMANTIC_EDGE_KINDS
+            or not isinstance(edge.get("source"), str)
+            or not isinstance(edge.get("target"), str)
+        ):
             raise ValueError("plan contains an invalid semantic edge")
+        source_kind = node_kinds.get(edge["source"].strip().casefold())
+        target_kind = node_kinds.get(edge["target"].strip().casefold())
+        target_path = None if target_kind else _relative_path(root, edge["target"])
+        target_is_file = (
+            target_kind is None
+            and target_path is not None
+            and (root / target_path).is_file()
+        )
+        if edge["kind"] == "documents" and (
+            target_path is None or not target_path.casefold().endswith(".md")
+        ):
+            target_is_file = False
+        if source_kind is None or not relationship_allowed(
+            source_kind,
+            target_kind,
+            edge["kind"],
+            target_is_file=target_is_file,
+        ):
+            raise ValueError("plan contains an invalid semantic relationship")
     return change
 
 
@@ -440,6 +479,8 @@ def apply_maintenance(
 
     root = _root(project_root)
     change = _validate_plan(root, plan)
+    if plan.get("review_revision") != expected_revision:
+        raise ValueError("expected_revision must match the plan review_revision")
     plan_id = str(plan["plan_id"])
     target = root / PROJECT_MEMORY
     text = (

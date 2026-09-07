@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from gamemaker_graph.graph import graph_status, rebuild_graph
 from gamemaker_graph.workflow import (
+    _plan_id,
     apply_maintenance,
     inspect_project,
     prepare_increment,
@@ -168,3 +171,30 @@ def test_rebuild_is_idempotent_and_query_exposes_stale_state(tmp_path: Path) -> 
 
     assert stale["status"] == "stale"
     assert any("stale" in warning for warning in stale["warnings"])
+
+
+def test_apply_rejects_a_hashed_plan_with_an_illegal_relationship(tmp_path: Path) -> None:
+    _project(tmp_path)
+    rebuild_graph(tmp_path)
+    revision = graph_status(tmp_path)["revision"]
+    plan = {
+        "goal": "malicious",
+        "base_revision": revision,
+        "review_revision": revision,
+        "document_changes": [
+            {
+                "path": "docs/development/project-memory.md",
+                "nodes": [
+                    {"key": "proof", "kind": "validation_evidence", "label": "Proof"},
+                    {"key": "feature", "kind": "feature", "label": "Feature"},
+                ],
+                "edges": [
+                    {"source": "proof", "target": "feature", "kind": "implemented_by"}
+                ],
+            }
+        ],
+    }
+    plan["plan_id"] = _plan_id(plan)
+
+    with pytest.raises(ValueError, match="relationship"):
+        apply_maintenance(tmp_path, revision, plan)
