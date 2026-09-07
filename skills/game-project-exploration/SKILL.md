@@ -7,10 +7,13 @@ description: Explore an existing local game project and return a bounded, source
 
 Build the smallest reliable context needed for the next development decision.
 
-1. Run `gamegraph status <project>`. Rebuild the disposable graph when it is missing or stale and the
-   task permits derived local writes.
-2. Use `gamegraph overview`, then `gamegraph context <query> <project>` for the requested feature.
-3. Use `gamegraph impact` before proposing changes. When CodeGraph is available, use its architecture
+1. Prefer `gamegraph_inspect_project`, then `gamegraph_query` for the requested feature. Rebuild the
+   disposable graph with `gamegraph_rebuild_index` when it is missing or stale and derived local writes
+   are in scope. Fall back to the equivalent `gamegraph` CLI only when the MCP is unavailable.
+2. Before proposing an increment, call `gamegraph_prepare_increment` with the user's goal. Its questions
+   and acceptance criteria are candidates only; do not write them into project memory before confirmation.
+3. Use the returned local facts and optional CodeGraph context to bound likely impact. When CodeGraph is
+   available, use its architecture
    and symbol relations for callers, dependencies, implementations, and tests.
 4. Inspect the native files behind important graph claims. Treat graph results as derived evidence;
    native project files remain authoritative.

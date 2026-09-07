@@ -38,6 +38,7 @@ gamegraph docs check [PROJECT]
 - `docs/architecture/overview.md`：组件边界、入口和数据流；
 - `docs/development/setup.md`：本地开发与运行方式；
 - `docs/development/testing.md`：自动化、运行时和人工验证入口；
+- `docs/development/project-memory.md`：确认后的玩法语义、决定、验收与证据受控区块；
 - `docs/architecture/implementation-map.md`：概念到文件、符号和验证的映射。
 
 检测到游戏项目时增加 `docs/product/gameplay.md`。检测到 frontend、backend 或 delivery 时，分别增加

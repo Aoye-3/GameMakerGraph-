@@ -7,7 +7,8 @@ description: Plan consistent game art, character variants, UI placeholders, and 
 
 Turn visual intent into a replaceable, reviewable asset plan.
 
-1. Establish concise style keywords, visual mood, target platform, readability constraints, and one or
+1. For an existing project, prefer `gamegraph_query` for current asset and feature context, then establish
+   concise style keywords, visual mood, target platform, readability constraints, and one or
    more user-approved references. Prefer analyzing an actual reference over relying on broad style labels.
 2. Produce one standard draft before batch generation. Do not generate a full set until the user approves
    the composition, palette, silhouette, line/texture treatment, and content boundaries.
@@ -19,7 +20,9 @@ Turn visual intent into a replaceable, reviewable asset plan.
    reinterpret each image. Typical slots may include silhouette, portrait, avatar, state variants, item
    icon, dialogue nameplate, and observation/clue display, but only include slots the game actually uses.
 6. Review images for consistency, player readability, accidental discomfort, and prompt/style drift.
-   Ask the creator to approve subjective choices.
+   Ask the creator to approve subjective choices. After assets are actually integrated and observed in the
+   running game, use `gamegraph_review_increment` to preview traceable memory changes; do not apply them
+   without confirmation.
 
 Never treat a successful image generation call as an integrated asset, and never silently substitute a
 placeholder when a required asset fails review.

@@ -7,7 +7,8 @@ description: Review a completed game slice across code quality, performance, doc
 
 Review claims and player-visible outcomes, not effort or tool success.
 
-1. Rebuild or verify current GameGraph, then query the implemented feature and its impact surface.
+1. Prefer `gamegraph_inspect_project` and `gamegraph_query` to verify current memory and inspect the
+   implemented feature. Do not rebuild before review when the stale baseline is needed to compare changes.
 2. Review code correctness and maintainability separately from performance. Give measured or source-backed
    optimization opportunities; do not label speculative micro-optimizations as required work.
 3. Compare project documents and implementation sources. Flag stale rules, unmapped systems, missing
@@ -17,8 +18,9 @@ Review claims and player-visible outcomes, not effort or tool success.
 5. Review overall experience as hypotheses: clarity, controls, feedback, pacing, visual consistency, and
    narrative continuity. When actual player behavior, notes, traces, captures, or diagnostics exist, read
    [references/playtest.md](references/playtest.md). Prioritize player evidence over a generic score.
-6. Return one result per claim: supported, failed, or insufficient evidence. Recommend only the smallest
-   bounded fixes with the highest user-visible value.
+6. Call `gamegraph_review_increment` with project-relative evidence from the current run. Return one result
+   per claim: supported, failed, or insufficient evidence. Show the deterministic maintenance plan, and
+   call `gamegraph_apply_maintenance` only after explicit user confirmation; then rebuild the index.
 
 Do not blindly apply every third-party review suggestion, claim that a screenshot proves hidden state, or
 edit the project while acting solely as reviewer.

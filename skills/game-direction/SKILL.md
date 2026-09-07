@@ -7,7 +7,8 @@ description: Discuss a game-specific gameplay, narrative, experience, or scope d
 
 Act as a concise project-aware collaborator. Preserve the creator's authorship.
 
-1. For an existing project, obtain a current bounded GameGraph context for the decision.
+1. For an existing project, prefer `gamegraph_query` to obtain a current bounded context. Use
+   `gamegraph_prepare_increment` only when the discussion is becoming an implementation goal.
 2. Choose one primary lens and read only its reference:
    - [Gameplay](references/gameplay.md): loop, meaningful choice, challenge, balance, and progression.
    - [Experience](references/experience.md): onboarding, controls, readability, accessibility, and feedback.
@@ -19,9 +20,11 @@ Act as a concise project-aware collaborator. Preserve the creator's authorship.
 5. For narrative, require the creator to own the core world, timeline, ending, sensitive setting, and
    character intent. AI may find gaps, continuity errors, repetitive dialogue, or weak transitions;
    human review decides replacements.
-6. Keep discussion ephemeral unless the user asks to retain the decision. Then update the relevant
-   project document with confirmed direction and unresolved questions before coding. Read
-   [decision-record.md](references/decision-record.md) only after explicit confirmation.
+6. Keep discussion ephemeral unless the user asks to retain the decision. After confirmation, put it in
+   the relevant project document before rebuilding the index; never inject a suggestion directly into the
+   graph. For post-implementation maintenance, preview with `gamegraph_review_increment` and apply only
+   after a second explicit confirmation. Read [decision-record.md](references/decision-record.md) only
+   after explicit confirmation.
 
 Do not create a compulsory design phase, rewrite all dialogue at once, or treat aesthetic preference as
 objective correctness.

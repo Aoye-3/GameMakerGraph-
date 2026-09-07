@@ -9,6 +9,7 @@ BASE_DOCUMENTS = {
     "docs/architecture/implementation-map.md",
     "docs/development/setup.md",
     "docs/development/testing.md",
+    "docs/development/project-memory.md",
 }
 
 
@@ -95,6 +96,9 @@ def test_init_creates_missing_documents_and_never_overwrites_existing_content(
     generated = (tmp_path / "docs/architecture/implementation-map.md").read_text("utf-8")
     assert "## To confirm" in generated
     assert "## Implementation map" in generated
+    memory = (tmp_path / "docs/development/project-memory.md").read_text("utf-8")
+    assert "<!-- GAMEGRAPH:START -->" in memory
+    assert '"applied_plans": []' in memory
 
 
 def test_check_reports_missing_broken_links_and_unconfirmed_template_items(

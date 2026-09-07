@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .graph import IGNORED_DIRECTORIES, graph_status
+from .semantic import END_MARKER, START_MARKER
 
 SCHEMA_VERSION = "0.1"
 CAPABILITY_ORDER = ("game", "frontend", "backend", "delivery")
@@ -18,6 +19,7 @@ BASE_DOCUMENTS = (
     "docs/architecture/implementation-map.md",
     "docs/development/setup.md",
     "docs/development/testing.md",
+    "docs/development/project-memory.md",
 )
 CAPABILITY_DOCUMENTS = {
     "game": "docs/product/gameplay.md",
@@ -40,6 +42,9 @@ DOCUMENT_PURPOSES = {
     "docs/development/setup.md": "Keep local setup and run commands executable.",
     "docs/development/testing.md": (
         "Define automated, runtime, and manual verification entry points."
+    ),
+    "docs/development/project-memory.md": (
+        "Store confirmed gameplay facts, decisions, acceptance criteria, and evidence."
     ),
     "docs/delivery/release.md": (
         "Describe the existing build and release path without inventing one."
@@ -228,6 +233,18 @@ def _document_template(relative: str) -> str:
             "Verification | Confidence |\n"
             "| --- | --- | --- | --- | --- |\n"
             "<!-- Add mapping rows below. -->\n"
+        )
+    if relative == "docs/development/project-memory.md":
+        content += (
+            "\n## Managed facts\n\n"
+            "Only GameMakerGraph maintains the JSON between the markers after explicit "
+            "confirmation. "
+            "Human-authored text outside the markers is preserved.\n\n"
+            f"{START_MARKER}\n"
+            "```json\n"
+            '{\n  "nodes": [],\n  "edges": [],\n  "applied_plans": []\n}\n'
+            "```\n"
+            f"{END_MARKER}\n"
         )
     return content
 
