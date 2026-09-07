@@ -1,0 +1,39 @@
+# 产品边界：GameMakerGraph
+
+## 状态
+
+Accepted as extraction baseline
+
+## 背景
+
+旧 GameMakerAgent 同时探索了玩法顾问、素材生产、Godot Provider、运行证据、交付记录和项目图。
+这些实验验证了若干技术路径，但整体产品过于接近一套游戏生产流程，增加了独立开发者日常使用的
+认知与记录成本。
+
+目标用户需要的首要能力不是虚拟工作室，而是让通用代码 Agent 快速理解本地游戏项目，并在修改前
+获得可靠、有限、可追踪的代码和文档上下文。
+
+## 决策
+
+GameMakerGraph 定位为本地优先的游戏项目知识图谱与 Agent 增强框架。
+
+1. GameGraph Core 与 Documentation Framework 是主要产品能力。
+2. 开发方向讨论由按需 Skill 提供，保持轻量和非强制。
+3. 引擎编辑、运行和素材生成复用已有 MCP、CLI 和生成工具。
+4. GameGraph 连接游戏语义与本地实现，但不复制成熟通用代码图引擎。
+5. 旧交付和证据能力移为可选扩展，不进入普通任务关键路径。
+6. 首次真实验证使用 TapTapMakerMCP 完成小游戏；第二次使用 Godot 参加 TapTapGameJam。
+
+## 与 CodeGraph 的关系
+
+CodeGraph 提供代码符号、调用和依赖关系。GameMakerGraph 提供玩法、文档、场景、资源、资产、
+测试和开发状态之间的游戏语义关系。两者可以组合：CodeGraph 是代码关系 Provider，GameGraph
+是面向游戏开发任务的上层语义图。
+
+## 后果
+
+- Core 必须在没有任何 MCP 在线时仍可工作。
+- 文档成为图中的一等来源，而不是 Production Card 的附件。
+- 旧 Project Map 只能选择性迁移，不能直接改名后当作新 Core。
+- 新功能必须说明它改善了项目理解、文档搭建或开发前分析中的哪一个问题。
+- 复杂交付验证仍可存在，但不得增加默认路径的摩擦。
