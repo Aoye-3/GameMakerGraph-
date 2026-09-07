@@ -271,11 +271,18 @@ def build_graph(project_root: Path) -> dict[str, Any]:
     }
 
 
-def _write_json_atomic(path: Path, value: Mapping[str, Any]) -> None:
+def _write_json_atomic(path: Path, value: Mapping[str, Any]) -> bool:
+    rendered = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    try:
+        if path.read_text("utf-8") == rendered:
+            return False
+    except OSError:
+        pass
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    temporary.write_text(rendered, "utf-8")
     temporary.replace(path)
+    return True
 
 
 def _read_graph(root: Path) -> dict[str, Any] | None:
@@ -289,11 +296,12 @@ def _read_graph(root: Path) -> dict[str, Any] | None:
 def rebuild_graph(project_root: Path) -> dict[str, Any]:
     root = project_root.resolve()
     graph = build_graph(root)
-    _write_json_atomic(root / GRAPH_PATH, graph)
+    changed = _write_json_atomic(root / GRAPH_PATH, graph)
     return {
         "status": "current",
         "revision": graph["revision"],
         "graph": str(root / GRAPH_PATH),
+        "changed": changed,
         "nodes": len(graph["nodes"]),
         "edges": len(graph["edges"]),
         "warnings": len(graph["warnings"]),
