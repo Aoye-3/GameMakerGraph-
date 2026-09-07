@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Project Exploration"
+  short_description: "Map gameplay, files, symbols, assets, and impact"
+  default_prompt: "Use $game-project-exploration to map this project before implementation."
+
+policy:
+  allow_implicit_invocation: true

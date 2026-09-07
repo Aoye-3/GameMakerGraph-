@@ -14,8 +14,8 @@ GameMakerGraph 帮助 Codex、Claude Code 等通用编程 Agent 在修改游戏�
 它为本地 Vibe Game 开发提供结构化项目理解、文档搭建，以及少量按需启用的开发 Skill。
 
 > **状态：产品方向已经确定，正在基于上一轮 GameMakerAgent 开发成果做收窄式迁移。**
-> `0.3.0` 已完成本地扫描、建图、任务上下文、影响分析、CodeGraph CLI 组合，以及开发文档的
-> 检查、建议、初始化和校验链路。重型生产编排降为可选能力。
+> `0.4.0` 已完成 GameGraph、CodeGraph CLI 组合、开发文档链路、七个可发现 Skill，以及
+> TapTap Maker 小游戏验证的本地预检、准备和验收计划。真实 MCP 运行仍必须在游戏项目中验证。
 
 ## 核心价值
 
@@ -109,17 +109,19 @@ GameMakerGraph 不是重新从零设计。上一轮开发已经证明了本地�
 
 方向探讨和开发辅助保持轻量。Skill 消费 GameGraph，但不是常驻角色或强制阶段。
 
-计划提供：
+当前提供：
 
-- **Project Bootstrap**：理解现有项目并建议最小文档集；
-- **Feature Context**：开发前返回相关文档、实现位置、影响范围和未知关系；
-- **Documentation Builder**：搭建或补齐经用户确认的开发文档；
-- **CodeGraph Documentation**：结合 GameGraph 与 CodeGraph，搭建前端、后端、架构、开发和交付文档；
-- **Game Direction**：简洁讨论玩法、体验、范围和优先级；
-- **Asset & UI Planning**：明确风格基准、资产槽位和 UI 占位；
-- **Review & Playtest**：按需检查实现、文档和玩家可见结果。
+- [`game-project-exploration`](skills/game-project-exploration/SKILL.md)：返回项目/功能局部上下文与影响；
+- [`codegraph-documentation`](skills/codegraph-documentation/SKILL.md)：结合 GameGraph 与 CodeGraph 搭建技术文档；
+- [`game-project-bootstrap`](skills/game-project-bootstrap/SKILL.md)：开发前定范围、拆模块并建立最小文档；
+- [`game-direction`](skills/game-direction/SKILL.md)：简洁讨论玩法、剧情、体验和范围；
+- [`game-art-direction`](skills/game-art-direction/SKILL.md)：明确风格基准、资产槽位、变体和 UI 占位；
+- [`game-quality-review`](skills/game-quality-review/SKILL.md)：检查代码、性能、文档、运行证据和试玩反馈；
+- [`minigame-validation`](skills/minigame-validation/SKILL.md)：通过真实游戏 MCP 验证一个可玩闭环。
 
 只有存在真实创作取舍时才进入方向讨论。普通编码和修错不会被迫经过完整策划流程。
+完整目录与旧 Skill 的迁移关系见 [GameMakerGraph Skills](docs/skills/README.md)。仓库根目录的
+`.codex-plugin/plugin.json` 将这些 Skill 声明为一个标准插件，不再藏在二级实验目录。
 
 ## 典型体验
 
@@ -154,6 +156,9 @@ gamegraph docs inspect /path/to/game
 gamegraph docs suggest /path/to/game
 gamegraph docs init /path/to/game
 gamegraph docs check /path/to/game
+gamegraph trial status /path/to/maker-game
+gamegraph trial prepare /path/to/maker-game
+gamegraph trial plan /path/to/maker-game
 ```
 
 当前索引识别 Markdown 文档与标题、常见代码/配置/数据/资产文件、Markdown 相对链接，以及
@@ -183,7 +188,7 @@ CodeGraph 未安装、未初始化或索引有待同步变更时，结果会明�
 [`CodeGraph 源码分析`](docs/research/codegraph-source-analysis-2026-09-07.md)。
 
 `codegraph-documentation` Skill 位于
-[`plugins/gamemaker-graph/skills/codegraph-documentation`](plugins/gamemaker-graph/skills/codegraph-documentation/SKILL.md)，
+[`skills/codegraph-documentation`](skills/codegraph-documentation/SKILL.md)，
 用于组合 GameMakerGraph 与 CodeGraph 查询结果并搭建本地技术文档。
 
 ### 开发文档四步链路
@@ -200,6 +205,22 @@ inspect（看现状） → suggest（给最小建议） → init（只补缺失�
 
 详细约束见
 [`Documentation Framework Specification`](docs/specs/documentation-framework.md)。
+
+### TapTap Maker 小游戏验证准备
+
+```text
+status（只读预检） → prepare（补缺失文档并建图） → plan（生成可观察验收契约）
+                         ↓
+             当前 Agent 会话连接真实 Maker MCP
+```
+
+`trial` 命令只对已经由官方 Maker 工具初始化的项目进行本地准备。它不会自动登录、创建远端应用、
+安装 MCP、构建或发布，也不会把 `.maker-mcp/config.json` 当作实时连接证明。状态达到
+`ready_for_live_validation` 后，使用 [`minigame-validation`](skills/minigame-validation/SKILL.md)
+在真实 Agent + Maker MCP 会话中完成一个主要操作、一个状态变化和一个成功目标。
+
+契约与上游依据见 [小游戏验证规格](docs/specs/skills-and-minigame-validation.md) 和
+[TapTap Maker 集成记录](docs/research/taptap-maker-integration-2026-09-07.md)。
 
 ## 明确不做
 

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Quality Review"
+  short_description: "Review code, performance, docs, runtime, and playtest evidence"
+  default_prompt: "Use $game-quality-review to review this completed game slice with current evidence."
+
+policy:
+  allow_implicit_invocation: true

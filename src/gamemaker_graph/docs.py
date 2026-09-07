@@ -80,6 +80,8 @@ def detect_project_capabilities(project_root: Path) -> tuple[list[str], dict[str
 
     if (root / "project.godot").is_file():
         evidence["game"].append("project.godot")
+    if (root / ".maker-mcp/config.json").is_file():
+        evidence["game"].append(".maker-mcp/config.json")
     evidence["game"].extend(path.name for path in sorted(root.glob("*.uproject")))
     if (root / "scenes").is_dir() and (root / "assets").is_dir():
         evidence["game"].append("scenes/assets directory")

@@ -10,6 +10,7 @@ from .graph import (
     rebuild_graph,
     search_graph,
 )
+from .trial import prepare_trial, trial_plan, trial_status
 
 __all__ = [
     "CodeGraphProvider",
@@ -24,6 +25,9 @@ __all__ = [
     "search_graph",
     "suggest_docs",
     "task_context",
+    "prepare_trial",
+    "trial_plan",
+    "trial_status",
 ]
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

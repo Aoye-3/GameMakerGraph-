@@ -52,6 +52,17 @@ def test_frontend_assets_directory_alone_does_not_imply_a_game_project(tmp_path:
     assert "docs/product/gameplay.md" not in {item["path"] for item in result["suggestions"]}
 
 
+def test_taptap_maker_binding_is_game_project_evidence(tmp_path: Path) -> None:
+    binding = tmp_path / ".maker-mcp/config.json"
+    binding.parent.mkdir(parents=True)
+    binding.write_text("{}\n", "utf-8")
+
+    result = suggest_docs(tmp_path)
+
+    assert result["project_capabilities"] == ["game"]
+    assert "docs/product/gameplay.md" in {item["path"] for item in result["suggestions"]}
+
+
 def test_inspect_is_read_only_and_reports_gamegraph_state(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text("# Existing\n", "utf-8")
     before = {path.relative_to(tmp_path) for path in tmp_path.rglob("*")}

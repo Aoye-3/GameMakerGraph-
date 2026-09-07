@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Project Bootstrap"
+  short_description: "Set scope, modules, and minimum development docs"
+  default_prompt: "Use $game-project-bootstrap to prepare this game project before implementation."
+
+policy:
+  allow_implicit_invocation: true

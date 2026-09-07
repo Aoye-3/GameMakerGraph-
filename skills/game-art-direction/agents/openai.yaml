@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Art Direction"
+  short_description: "Plan references, asset slots, variants, and UI placeholders"
+  default_prompt: "Use $game-art-direction to define a consistent, replaceable asset plan."
+
+policy:
+  allow_implicit_invocation: true

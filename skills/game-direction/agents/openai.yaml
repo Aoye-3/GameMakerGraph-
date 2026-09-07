@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Direction"
+  short_description: "Resolve gameplay, narrative, experience, or scope choices"
+  default_prompt: "Use $game-direction to refine this game decision without taking over authorship."
+
+policy:
+  allow_implicit_invocation: true

@@ -75,6 +75,8 @@ gamegraph-core
 - Skill 不依赖具体 MCP 工具名称。
 - `codegraph-documentation` 可在 CodeGraph 可用时合并玩法图与代码图，生成可追溯的本地技术文档；
 - 前端、后端、部署等文档按仓库实际组成启用，不为不存在的系统生成占位架构。
+- 根目录 `skills/` 已发布项目探索、文档搭建、项目启动、方向讨论、美术规划、质量审查和小游戏验证；
+- `.codex-plugin/plugin.json` 提供可发现的插件入口与 UI 元数据。
 
 ### `tool-integrations`
 
@@ -85,6 +87,7 @@ gamegraph-core
 - 工具不可用时，核心查询和文档能力仍然工作。
 - CodeGraph 首版通过 `status/query/impact --json` 组合，不读取其 SQLite 或复制解析器；
 - CodeGraph Provider 已完成本地 CLI 适配，MCP 原生桥接留待真实 Agent 宿主验证。
+- TapTap Maker 已实现 `trial status/prepare/plan` 本地适配；live MCP 连接和可玩结果只由真实验证确认。
 
 ### `delivery-evidence`
 
@@ -102,8 +105,8 @@ gamegraph-core
 - 自动写入未确认设计；
 - 对所有任务强制 Production Card 和 Evidence Bundle。
 
-## 首个待确认实现切片
+## 当前验证切片
 
-`gamegraph-core` 的第一片从上一轮扫描器和 Project Map 迁移：保留 Godot `.tscn/.tres/.gd`
-确定性引用，同时把 Markdown 文档提升为一等节点。引擎特有解析位于 parser 边界，Core 不依赖
-Godot MCP 在线。
+框架已经能把完成初始化的 TapTap Maker 项目准备到 `ready_for_live_validation`。下一步在独立游戏
+项目中连接真实 Maker MCP，完成一个主要操作、一个可观察状态变化、一个成功目标和一次可重复运行，
+再依据真实断点修正 Core、文档和 Skill。

@@ -1,0 +1,28 @@
+{
+  "name": "gamemaker-graph",
+  "version": "0.4.0",
+  "description": "Local game project exploration, documentation, direction, art planning, review, and minigame validation skills.",
+  "author": {
+    "name": "Aoye-3",
+    "url": "https://github.com/Aoye-3"
+  },
+  "homepage": "https://github.com/Aoye-3/GameMakerGraph-",
+  "repository": "https://github.com/Aoye-3/GameMakerGraph-",
+  "license": "MIT",
+  "keywords": ["game-development", "gamegraph", "codegraph", "vibe-coding"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GameMakerGraph",
+    "shortDescription": "Local game project context and development guidance",
+    "longDescription": "Explore local game projects, build source-backed documentation, discuss direction, plan art, review quality, and prepare bounded minigame validation.",
+    "developerName": "Aoye-3",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/Aoye-3/GameMakerGraph-/",
+    "defaultPrompt": [
+      "Explore this game project before I change it.",
+      "Build the minimum source-backed development docs.",
+      "Prepare this project for a bounded minigame validation."
+    ]
+  }
+}

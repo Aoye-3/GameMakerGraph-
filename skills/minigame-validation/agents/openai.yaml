@@ -1,0 +1,7 @@
+interface:
+  display_name: "Minigame Validation"
+  short_description: "Prove one playable loop through a real game MCP"
+  default_prompt: "Use $minigame-validation to prepare and verify one bounded playable loop."
+
+policy:
+  allow_implicit_invocation: true

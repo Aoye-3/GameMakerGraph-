@@ -1,0 +1,7 @@
+interface:
+  display_name: "CodeGraph Documentation"
+  short_description: "Map game concepts to architecture and code symbols"
+  default_prompt: "Use $codegraph-documentation to build source-backed project documentation."
+
+policy:
+  allow_implicit_invocation: true

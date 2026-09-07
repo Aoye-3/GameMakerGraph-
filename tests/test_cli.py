@@ -38,3 +38,16 @@ def test_cli_docs_init_and_check_emit_machine_readable_json(tmp_path: Path, caps
     assert main(["docs", "check", str(tmp_path)]) == 0
     checked = json.loads(capsys.readouterr().out)
     assert checked["operation"] == "check"
+
+
+def test_cli_trial_status_and_plan_emit_machine_readable_json(
+    tmp_path: Path, capsys: object
+) -> None:
+    assert main(["trial", "status", str(tmp_path)]) == 0
+    status = json.loads(capsys.readouterr().out)
+    assert status["status"] == "blocked"
+
+    assert main(["trial", "plan", str(tmp_path)]) == 0
+    plan = json.loads(capsys.readouterr().out)
+    assert plan["operation"] == "plan"
+    assert plan["provider"] == "taptap-maker"

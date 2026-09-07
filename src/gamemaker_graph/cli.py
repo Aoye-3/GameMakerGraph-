@@ -10,6 +10,7 @@ from typing import Sequence
 from .context import impact_graph, task_context
 from .docs import check_docs, init_docs, inspect_docs, suggest_docs
 from .graph import graph_overview, graph_status, rebuild_graph, search_graph
+from .trial import prepare_trial, trial_plan, trial_status
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -44,6 +45,13 @@ def _parser() -> argparse.ArgumentParser:
     for operation in ("inspect", "suggest", "init", "check"):
         docs_command = docs_commands.add_parser(operation)
         docs_command.add_argument("project", nargs="?", default=".")
+
+    trial = commands.add_parser("trial")
+    trial_commands = trial.add_subparsers(dest="trial_command", required=True)
+    for operation in ("status", "prepare", "plan"):
+        trial_command = trial_commands.add_parser(operation)
+        trial_command.add_argument("project", nargs="?", default=".")
+        trial_command.add_argument("--provider", default="taptap-maker")
     return parser
 
 
@@ -80,6 +88,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             "check": check_docs,
         }
         result = operations[args.docs_command](project)
+    elif args.command == "trial":
+        operations = {
+            "status": trial_status,
+            "prepare": prepare_trial,
+            "plan": trial_plan,
+        }
+        result = operations[args.trial_command](project, args.provider)
     else:
         result = graph_status(project)
     print(json.dumps(result, ensure_ascii=False, indent=2))

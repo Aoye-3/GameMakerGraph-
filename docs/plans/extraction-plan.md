@@ -2,7 +2,7 @@
 
 ## 状态
 
-Phase 0 and Phase 1 complete. Phase 2 executable documentation loop complete; semantic slot mapping remains.
+Phase 0–3 complete. Phase 4 local integration contract and readiness loop complete; live Maker MCP trial remains.
 
 ## 原则
 
@@ -52,18 +52,22 @@ Phase 0 and Phase 1 complete. Phase 2 executable documentation loop complete; se
 ## Phase 3：Development Skills
 
 - [x] CodeGraph Documentation
-- [ ] Project Bootstrap
-- [ ] Feature Context
-- [ ] Documentation Builder
-- [ ] Game Direction
-- [ ] Asset & UI Planning
-- [ ] Review & Playtest
+- [x] Project Bootstrap
+- [x] Project Exploration / Feature Context
+- [x] Documentation Builder
+- [x] Game Direction
+- [x] Asset & UI Planning
+- [x] Review & Playtest
+- [x] Minigame Validation
+- [x] Codex plugin manifest 与 Skill UI 元数据
 
 验收：查询/搭建采用明确流程，方向讨论保持轻量；普通编码不会加载无关 Skill。
 
 ## Phase 4：TapTapMakerMCP 验证
 
-- [ ] 定义最小 Integration 契约；
+- [x] 定义最小 Integration 契约；
+- [x] 实现 trial status、prepare、plan；
+- [x] 区分本地绑定、框架准备和 live MCP 连接；
 - [ ] 连接已有 TapTapMakerMCP；
 - [ ] 从需求、文档、开发到可玩小游戏完成一次自然流程；
 - [ ] 记录图查询是否减少全仓扫描、遗漏和返工；
