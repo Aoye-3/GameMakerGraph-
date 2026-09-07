@@ -98,7 +98,9 @@ def test_apply_preserves_human_content_rejects_conflicts_and_is_idempotent(
     second_base = graph_status(tmp_path)["revision"]
     second_review = review_increment(tmp_path, "Add timer", second_base)
     (tmp_path / "scripts/game.js").write_text("export const score = 2;", encoding="utf-8")
-    conflict = apply_maintenance(tmp_path, second_review["revision"], second_review["facts"]["plan"])
+    conflict = apply_maintenance(
+        tmp_path, second_review["revision"], second_review["facts"]["plan"]
+    )
 
     assert conflict["status"] == "conflict"
     assert second_review["facts"]["plan"]["plan_id"] not in memory.read_text("utf-8")

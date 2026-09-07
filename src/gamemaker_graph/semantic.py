@@ -232,7 +232,9 @@ def parse_semantic_documents(project_root: Path) -> dict[str, Any]:
         source = by_key.get(source_key.strip().casefold())
         target = by_key.get(target_ref.strip().casefold())
         target_path = None if target else _relative_path(root, target_ref)
-        target_is_file = target is None and target_path is not None and (root / target_path).is_file()
+        target_is_file = (
+            target is None and target_path is not None and (root / target_path).is_file()
+        )
         if (
             source is None
             or kind not in SEMANTIC_EDGE_KINDS

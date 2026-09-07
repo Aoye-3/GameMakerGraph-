@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gamemaker-graph"
-version = "0.4.1"
+version = "0.5.0"
 description = "Local project graph and documentation context for vibe game development"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,9 +14,14 @@ dependencies = []
 
 [project.scripts]
 gamegraph = "gamemaker_graph.cli:main"
+gamegraph-mcp = "gamemaker_graph.mcp_server:main"
+
+[project.optional-dependencies]
+mcp = ["mcp>=2,<3"]
 
 [dependency-groups]
 dev = [
+  "mcp>=2,<3",
   "pytest>=8,<10",
   "ruff>=0.8,<1",
 ]

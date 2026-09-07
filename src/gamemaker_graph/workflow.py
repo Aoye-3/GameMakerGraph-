@@ -194,7 +194,9 @@ def query_project(
     )
     warnings = list(graph.get("warnings", []))
     if state["status"] != "current":
-        warnings.append(f"Persisted GameGraph is {state['status']}; rebuild it for a current index.")
+        warnings.append(
+            f"Persisted GameGraph is {state['status']}; rebuild it for a current index."
+        )
     return _envelope(
         "gamegraph_query",
         root,
@@ -232,7 +234,9 @@ def _artifact_hashes(graph: Mapping[str, Any] | None) -> dict[str, str]:
 def _changes(before: Mapping[str, str], after: Mapping[str, str]) -> dict[str, list[str]]:
     return {
         "added": sorted(after.keys() - before.keys()),
-        "modified": sorted(path for path in before.keys() & after.keys() if before[path] != after[path]),
+        "modified": sorted(
+            path for path in before.keys() & after.keys() if before[path] != after[path]
+        ),
         "removed": sorted(before.keys() - after.keys()),
     }
 
@@ -438,7 +442,11 @@ def apply_maintenance(
     change = _validate_plan(root, plan)
     plan_id = str(plan["plan_id"])
     target = root / PROJECT_MEMORY
-    text = target.read_text("utf-8-sig", errors="strict") if target.is_file() else "# Project Memory\n"
+    text = (
+        target.read_text("utf-8-sig", errors="strict")
+        if target.is_file()
+        else "# Project Memory\n"
+    )
     match, payload = _decode_controlled(text)
 
     if plan_id in payload["applied_plans"]:

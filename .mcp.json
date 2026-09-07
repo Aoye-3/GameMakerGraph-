@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "gamemaker-graph": {
+      "type": "stdio",
+      "command": "gamegraph-mcp",
+      "args": []
+    }
+  }
+}

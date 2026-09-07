@@ -1,7 +1,7 @@
 {
   "name": "gamemaker-graph",
-  "version": "0.4.1",
-  "description": "Local game project exploration, documentation, direction, art planning, review, and minigame validation skills.",
+  "version": "0.5.0",
+  "description": "Persistent local game-project memory, next-step guidance, and source-backed development skills.",
   "author": {
     "name": "Aoye-3",
     "url": "https://github.com/Aoye-3"
@@ -11,18 +11,19 @@
   "license": "MIT",
   "keywords": ["game-development", "gamegraph", "codegraph", "vibe-coding"],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "GameMakerGraph",
-    "shortDescription": "Local game project context and development guidance",
-    "longDescription": "Explore local game projects, build source-backed documentation, discuss direction, plan art, review quality, and prepare bounded minigame validation.",
+    "shortDescription": "Persistent game-project memory and next-step guidance",
+    "longDescription": "Keep gameplay intent, implementation state, decisions, acceptance criteria, and runtime evidence connected across local vibe-game development increments.",
     "developerName": "Aoye-3",
     "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/Aoye-3/GameMakerGraph-/",
     "defaultPrompt": [
-      "Explore this game project before I change it.",
-      "Build the minimum source-backed development docs.",
-      "Prepare this project for a bounded minigame validation."
+      "Inspect this game project and propose the next smallest increment.",
+      "Prepare a source-backed gameplay change before implementation.",
+      "Review this increment and preview project-memory maintenance."
     ]
   }
 }
