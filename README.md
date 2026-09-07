@@ -14,7 +14,7 @@ GameMakerGraph 帮助 Codex、Claude Code 等通用编程 Agent 在修改游戏�
 它为本地 Vibe Game 开发提供结构化项目理解、文档搭建，以及少量按需启用的开发 Skill。
 
 > **状态：产品方向已经确定，正在基于上一轮 GameMakerAgent 开发成果做收窄式迁移。**
-> `0.4.0` 已完成 GameGraph、CodeGraph CLI 组合、开发文档链路、七个可发现 Skill，以及
+> `0.4.1` 已完成 GameGraph、CodeGraph CLI 组合、开发文档链路、七个可发现 Skill，以及
 > TapTap Maker 小游戏验证的本地预检、准备和验收计划。真实 MCP 运行仍必须在游戏项目中验证。
 
 ## 核心价值

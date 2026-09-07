@@ -15,7 +15,8 @@ Review claims and player-visible outcomes, not effort or tool success.
 4. For runtime claims, require evidence from the current implementation: launch/run identity, input or
    action trace, observable state, player-visible capture where relevant, and diagnostics from the same run.
 5. Review overall experience as hypotheses: clarity, controls, feedback, pacing, visual consistency, and
-   narrative continuity. Prioritize actual player feedback over a generic automated score.
+   narrative continuity. When actual player behavior, notes, traces, captures, or diagnostics exist, read
+   [references/playtest.md](references/playtest.md). Prioritize player evidence over a generic score.
 6. Return one result per claim: supported, failed, or insufficient evidence. Recommend only the smallest
    bounded fixes with the highest user-visible value.
 
