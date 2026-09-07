@@ -28,3 +28,13 @@ def test_cli_context_and_impact_can_run_without_codegraph(tmp_path: Path, capsys
     assert main(["impact", "file:design.md", str(tmp_path), "--no-codegraph"]) == 0
     impact = json.loads(capsys.readouterr().out)
     assert impact["root"] == "file:design.md"
+
+
+def test_cli_docs_init_and_check_emit_machine_readable_json(tmp_path: Path, capsys: object) -> None:
+    assert main(["docs", "init", str(tmp_path)]) == 0
+    initialized = json.loads(capsys.readouterr().out)
+    assert "docs/README.md" in initialized["created"]
+
+    assert main(["docs", "check", str(tmp_path)]) == 0
+    checked = json.loads(capsys.readouterr().out)
+    assert checked["operation"] == "check"

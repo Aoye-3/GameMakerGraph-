@@ -2,7 +2,7 @@
 
 ## 状态
 
-Phase 0 complete. Phase 1 query loop complete; documentation inspection remains next.
+Phase 0 and Phase 1 complete. Phase 2 executable documentation loop complete; semantic slot mapping remains.
 
 ## 原则
 
@@ -41,11 +41,11 @@ Phase 0 complete. Phase 1 query loop complete; documentation inspection remains 
 
 ## Phase 2：Documentation Framework
 
-- [ ] 定义项目类型与最小文档集的输入；
-- [ ] 建立不含具体游戏内容的文档模板；
-- [ ] 实现 docs inspect、suggest、init、check；
+- [x] 定义项目类型与最小文档集的输入；
+- [x] 建立不含具体游戏内容的文档模板；
+- [x] 实现 docs inspect、suggest、init、check；
 - [ ] 将标题、引用、系统和资产槽位加入 GameGraph；
-- [ ] 区分已确认事实、模板占位和 Agent 推断。
+- [x] 区分已确认事实、模板占位和 Agent 推断。
 
 验收：能从空白项目搭建最小文档，也能在已有项目中只补缺口而不覆盖原文。
 

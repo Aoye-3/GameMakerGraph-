@@ -63,6 +63,8 @@ gamegraph-core
 - 只在用户确认后创建或改变创作语义；
 - 能报告缺少章节、未解析引用和文档/实现漂移；
 - 模板不包含具体游戏设定。
+- `inspect`、`suggest`、`init`、`check` 四步链路已经实现；
+- `init` 只补缺失文件，现有文档保持不变。
 
 ### `development-skills`
 

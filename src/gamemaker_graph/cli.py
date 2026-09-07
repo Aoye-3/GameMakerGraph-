@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .context import impact_graph, task_context
+from .docs import check_docs, init_docs, inspect_docs, suggest_docs
 from .graph import graph_overview, graph_status, rebuild_graph, search_graph
 
 
@@ -37,6 +38,12 @@ def _parser() -> argparse.ArgumentParser:
     impact.add_argument("--depth", type=int, default=2)
     impact.add_argument("--code-symbol")
     impact.add_argument("--no-codegraph", action="store_true")
+
+    docs = commands.add_parser("docs")
+    docs_commands = docs.add_subparsers(dest="docs_command", required=True)
+    for operation in ("inspect", "suggest", "init", "check"):
+        docs_command = docs_commands.add_parser(operation)
+        docs_command.add_argument("project", nargs="?", default=".")
     return parser
 
 
@@ -65,6 +72,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             code_symbol=args.code_symbol,
             include_code=not args.no_codegraph,
         )
+    elif args.command == "docs":
+        operations = {
+            "inspect": inspect_docs,
+            "suggest": suggest_docs,
+            "init": init_docs,
+            "check": check_docs,
+        }
+        result = operations[args.docs_command](project)
     else:
         result = graph_status(project)
     print(json.dumps(result, ensure_ascii=False, indent=2))

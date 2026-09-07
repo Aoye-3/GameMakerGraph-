@@ -14,8 +14,8 @@ GameMakerGraph 帮助 Codex、Claude Code 等通用编程 Agent 在修改游戏�
 它为本地 Vibe Game 开发提供结构化项目理解、文档搭建，以及少量按需启用的开发 Skill。
 
 > **状态：产品方向已经确定，正在基于上一轮 GameMakerAgent 开发成果做收窄式迁移。**
-> `0.2.0` 已完成本地扫描、建图、概览、搜索、新鲜度、任务上下文、影响分析和 CodeGraph CLI
-> 组合；文档检查和自动搭建继续按增量切片迁移。重型生产编排降为可选能力。
+> `0.3.0` 已完成本地扫描、建图、任务上下文、影响分析、CodeGraph CLI 组合，以及开发文档的
+> 检查、建议、初始化和校验链路。重型生产编排降为可选能力。
 
 ## 核心价值
 
@@ -150,6 +150,10 @@ gamegraph search "shop economy" /path/to/game
 gamegraph context "add a shop event" /path/to/game
 gamegraph impact "file:scenes/shop.tscn" /path/to/game --code-symbol open_shop
 gamegraph status /path/to/game
+gamegraph docs inspect /path/to/game
+gamegraph docs suggest /path/to/game
+gamegraph docs init /path/to/game
+gamegraph docs check /path/to/game
 ```
 
 当前索引识别 Markdown 文档与标题、常见代码/配置/数据/资产文件、Markdown 相对链接，以及
@@ -181,6 +185,21 @@ CodeGraph 未安装、未初始化或索引有待同步变更时，结果会明�
 `codegraph-documentation` Skill 位于
 [`plugins/gamemaker-graph/skills/codegraph-documentation`](plugins/gamemaker-graph/skills/codegraph-documentation/SKILL.md)，
 用于组合 GameMakerGraph 与 CodeGraph 查询结果并搭建本地技术文档。
+
+### 开发文档四步链路
+
+```text
+inspect（看现状） → suggest（给最小建议） → init（只补缺失） → check（找问题）
+```
+
+- `inspect` 和 `suggest` 完全只读；
+- `init` 只创建缺失文档，已有内容不会覆盖；
+- 通用项目获得最小基础文档，游戏、前端、后端和交付文档按仓库证据增加；
+- 模板把已确认事实与 `To confirm` 分开，不替开发者编造玩法、剧情或架构决策；
+- `check` 报告缺失文档、Markdown 断链、待确认项、空实现映射和 GameGraph 新鲜度。
+
+详细约束见
+[`Documentation Framework Specification`](docs/specs/documentation-framework.md)。
 
 ## 明确不做
 
