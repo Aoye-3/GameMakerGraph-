@@ -10,6 +10,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .semantic import parse_semantic_documents
+
 INDEX_DIRECTORY = Path(".gamemakergraph")
 GRAPH_PATH = INDEX_DIRECTORY / "graph.json"
 IGNORED_DIRECTORIES = {
@@ -249,8 +251,15 @@ def build_graph(project_root: Path) -> dict[str, Any]:
                         f"Unresolved resource reference at {relative}:{line}: {match.group(1)}"
                     )
 
+    semantic = parse_semantic_documents(root)
+    for node in semantic["nodes"]:
+        nodes[node["id"]] = node
+    for edge in semantic["edges"]:
+        add_edge(edge["source"], edge["target"], edge["kind"], edge["evidence"])
+    warnings.extend(semantic["warnings"])
+
     return {
-        "schema_version": "0.1",
+        "schema_version": "0.5",
         "project_name": root.name,
         "project_type": "godot" if (root / "project.godot").is_file() else "generic",
         "revision": revision,
