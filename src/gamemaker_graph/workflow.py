@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
@@ -18,6 +19,14 @@ from .graph import (
     project_revision,
     rebuild_graph,
 )
+from .review_state import (
+    close_review_state,
+    create_review_state,
+    read_review_state,
+    reconcile_project,
+    record_review_result,
+    recover_review_state,
+)
 from .semantic import (
     END_MARKER,
     SEMANTIC_EDGE_KINDS,
@@ -26,7 +35,7 @@ from .semantic import (
     relationship_allowed,
 )
 
-SCHEMA_VERSION = "0.5"
+SCHEMA_VERSION = "0.6"
 PROJECT_MEMORY = "docs/development/project-memory.md"
 _CONTROLLED = re.compile(
     rf"(?P<start>^{re.escape(START_MARKER)}\s*$\n?)(?P<body>.*?)(?P<end>^\s*{re.escape(END_MARKER)}\s*$)",
@@ -111,12 +120,29 @@ def inspect_project(project_root: str | Path) -> dict[str, Any]:
     """Inspect project memory, documentation, graph freshness, and optional providers."""
 
     root = _root(project_root)
+    review_state = reconcile_project(root)
+    if review_state is None:
+        review_state = _recover_confirmed_increment(root)
     state = graph_status(root)
     provider = CodeGraphProvider.auto().status(root)
+    review_status = review_state.get("status") if review_state is not None else None
+    public_status = (
+        "review_required"
+        if review_status == "review_required"
+        else "active"
+        if review_status == "confirmed"
+        else "evidence_required"
+        if review_status == "implemented_unverified"
+        else "maintenance_required"
+        if review_status == "validated"
+        else "ready"
+        if state["status"] == "current"
+        else state["status"]
+    )
     return _envelope(
         "gamegraph_inspect_project",
         root,
-        "ready" if state["status"] == "current" else state["status"],
+        public_status,
         facts={
             "gamegraph": state,
             "documentation": inspect_docs(root),
@@ -125,14 +151,67 @@ def inspect_project(project_root: str | Path) -> dict[str, Any]:
                 "configured": (root / ".maker-mcp/config.json").is_file(),
                 "config_content_read": False,
             },
+            "active_increment": (
+                review_state.get("active_increment") if review_state is not None else None
+            ),
+            "review_state": (
+                {
+                    key: review_state.get(key)
+                    for key in ("status", "baseline_revision", "observed_revision")
+                }
+                if review_state is not None
+                else {"status": "idle"}
+            ),
+            "changed_paths": (
+                review_state.get("changes", {"added": [], "modified": [], "removed": []})
+                if review_state is not None
+                else {"added": [], "modified": [], "removed": []}
+            ),
+            "evidence_gaps": (
+                review_state.get("evidence_gaps", []) if review_state is not None else []
+            ),
+            "pending_plan": (
+                review_state.get("pending_plan") if review_state is not None else None
+            ),
         },
-        warnings=[] if state["status"] == "current" else [f"GameGraph is {state['status']}."],
+        warnings=(
+            [
+                "Review baseline was recovered from confirmed Markdown; "
+                "historical paths are unavailable."
+            ]
+            if review_state is not None and review_state.get("baseline_recovered")
+            else []
+        )
+        + ([] if state["status"] == "current" else [f"GameGraph is {state['status']}."]),
         next_actions=(
-            ["Call gamegraph_prepare_increment before the next code change."]
+            ["Call gamegraph_review_increment for the active confirmed increment."]
+            if review_state is not None and review_state.get("status") == "review_required"
+            else ["Collect same-revision playtest evidence, then review the increment again."]
+            if review_state is not None
+            and review_state.get("status") == "implemented_unverified"
+            else ["Ask the user to confirm the pending plan, then apply it unchanged."]
+            if review_state is not None and review_state.get("status") == "validated"
+            else ["Continue the confirmed increment and collect observable runtime evidence."]
+            if review_state is not None and review_state.get("status") == "confirmed"
+            else ["Call gamegraph_prepare_increment before the next code change."]
             if state["status"] == "current"
             else ["Call gamegraph_rebuild_index before relying on indexed relationships."]
         ),
     )
+
+
+def _increment_id(draft: Mapping[str, Any]) -> str:
+    unsigned = {key: value for key, value in draft.items() if key != "increment_id"}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "increment:" + hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def _feature_key(increment_id: str) -> str:
+    return "feature-" + increment_id.removeprefix("increment:")[:12]
+
+
+def _acceptance_key(increment_id: str, index: int) -> str:
+    return f"acceptance-{increment_id.removeprefix('increment:')[:12]}-{index + 1}"
 
 
 def prepare_increment(project_root: str | Path, goal: str) -> dict[str, Any]:
@@ -152,22 +231,35 @@ def prepare_increment(project_root: str | Path, goal: str) -> dict[str, Any]:
         warnings.append(
             f"GameGraph is {state['status']}; local facts were derived in memory and not persisted."
         )
+    acceptance = f"在真实运行中可以观察到目标产生的状态变化：{goal}"
+    draft: dict[str, Any] = {
+        "goal": goal,
+        "player_observable_change": goal,
+        "constraints": ["只实现本次确认的最小增量。"],
+        "non_goals": ["不包含未经确认的相邻功能或重构。"],
+        "acceptance_criteria": [acceptance],
+        "open_questions": [
+            "请确认这次增量只包含一个可观察的玩家或系统变化。",
+            "请确认验收必须来自同一版本的实际运行或试玩，而不只是构建成功。",
+        ],
+        "codegraph_queries": [goal],
+        "base_revision": state["revision"],
+    }
+    draft["increment_id"] = _increment_id(draft)
     return _envelope(
         "gamegraph_prepare_increment",
         root,
         "ready" if state["status"] == "current" else "index_required",
         facts={
             "goal": goal,
+            "draft": draft,
             "local_context": matches,
             "code_context": provider,
-            "questions": [
-                "请确认这次增量只包含一个可观察的玩家或系统变化。",
-                "请确认验收必须来自同一版本的实际运行或试玩，而不只是构建成功。",
-            ],
+            "questions": draft["open_questions"],
             "acceptance_candidates": [
                 {
                     "kind": "acceptance_criterion",
-                    "claim": f"在真实运行中可以观察到目标产生的状态变化：{goal}",
+                    "claim": acceptance,
                     "confirmation_required": True,
                 }
             ],
@@ -178,6 +270,184 @@ def prepare_increment(project_root: str | Path, goal: str) -> dict[str, Any]:
             "Ask the user to confirm scope and observable acceptance before implementation.",
             "Use the separate engine or Maker MCP to implement and run the confirmed increment.",
         ],
+    )
+
+
+def _validate_draft(draft: Mapping[str, Any]) -> dict[str, Any]:
+    required_strings = ("increment_id", "goal", "player_observable_change", "base_revision")
+    required_lists = (
+        "constraints",
+        "non_goals",
+        "acceptance_criteria",
+        "open_questions",
+        "codegraph_queries",
+    )
+    if any(
+        not isinstance(draft.get(field), str) or not draft[field].strip()
+        for field in required_strings
+    ):
+        raise ValueError("draft is missing a required string field")
+    if any(
+        not isinstance(draft.get(field), list)
+        or any(not isinstance(item, str) or not item.strip() for item in draft[field])
+        for field in required_lists
+    ):
+        raise ValueError("draft contains an invalid list field")
+    if not draft["acceptance_criteria"]:
+        raise ValueError("draft must contain at least one acceptance criterion")
+    clean = {field: draft[field] for field in (*required_strings, *required_lists)}
+    if clean["increment_id"] != _increment_id(clean):
+        raise ValueError("increment_id does not match the deterministic draft content")
+    return clean
+
+
+def _recover_confirmed_increment(root: Path) -> dict[str, Any] | None:
+    target = root / PROJECT_MEMORY
+    if not target.is_file():
+        return None
+    try:
+        _, payload = _decode_controlled(target.read_text("utf-8-sig", errors="strict"))
+    except (OSError, ValueError):
+        return None
+    fields = {
+        "increment_id",
+        "goal",
+        "player_observable_change",
+        "constraints",
+        "non_goals",
+        "acceptance_criteria",
+        "open_questions",
+        "codegraph_queries",
+        "base_revision",
+    }
+    for node in payload["nodes"]:
+        if (
+            isinstance(node, dict)
+            and node.get("kind") == "feature"
+            and node.get("status") == "confirmed"
+        ):
+            try:
+                draft = _validate_draft({field: node.get(field) for field in fields})
+            except ValueError:
+                continue
+            return recover_review_state(root, draft)
+    return None
+
+
+def confirm_increment(
+    project_root: str | Path, expected_revision: str, draft: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Persist one explicitly confirmed increment and establish its implementation baseline."""
+
+    root = _root(project_root)
+    clean = _validate_draft(draft)
+    increment_id = clean["increment_id"]
+    target = root / PROJECT_MEMORY
+    text = (
+        target.read_text("utf-8-sig", errors="strict")
+        if target.is_file()
+        else "# Project Memory\n"
+    )
+    match, payload = _decode_controlled(text)
+    existing = next(
+        (
+            node
+            for node in payload["nodes"]
+            if isinstance(node, dict) and node.get("increment_id") == increment_id
+        ),
+        None,
+    )
+    if existing is not None:
+        state = read_review_state(root)
+        return _envelope(
+            "gamegraph_confirm_increment",
+            root,
+            "unchanged",
+            facts={
+                "increment_id": increment_id,
+                "review_state": (
+                    {"status": state.get("status"), "revision": state.get("observed_revision")}
+                    if state is not None
+                    else {"status": "recovery_required"}
+                ),
+            },
+            next_actions=["Continue the already confirmed increment."],
+        )
+    active = read_review_state(root)
+    if active is not None and active.get("active_increment"):
+        return _envelope(
+            "gamegraph_confirm_increment",
+            root,
+            "conflict",
+            facts={"increment_id": increment_id},
+            warnings=["Another confirmed increment is still active."],
+            next_actions=["Review or close the active increment before confirming another one."],
+        )
+    if clean["base_revision"] != expected_revision or project_revision(root) != expected_revision:
+        return _envelope(
+            "gamegraph_confirm_increment",
+            root,
+            "conflict",
+            facts={"increment_id": increment_id, "expected_revision": expected_revision},
+            warnings=[
+                "Project revision changed after the increment was prepared; "
+                "no document was modified."
+            ],
+            next_actions=["Prepare the increment again against the latest project state."],
+        )
+
+    feature_key = _feature_key(increment_id)
+    nodes: list[dict[str, Any]] = [
+        {
+            "key": feature_key,
+            "kind": "feature",
+            "label": clean["goal"],
+            "status": "confirmed",
+            **clean,
+        }
+    ]
+    edges: list[dict[str, str]] = [
+        {"source": feature_key, "target": PROJECT_MEMORY, "kind": "documents"}
+    ]
+    for index, criterion in enumerate(clean["acceptance_criteria"]):
+        key = _acceptance_key(increment_id, index)
+        nodes.append(
+            {
+                "key": key,
+                "kind": "acceptance_criterion",
+                "label": criterion,
+                "status": "confirmed",
+                "increment_id": increment_id,
+            }
+        )
+        edges.append({"source": key, "target": feature_key, "kind": "depends_on"})
+    plan: dict[str, Any] = {
+        "phase": "confirmation",
+        "increment_id": increment_id,
+        "goal": clean["goal"],
+        "base_revision": expected_revision,
+        "review_revision": expected_revision,
+        "document_changes": [{"path": PROJECT_MEMORY, "nodes": nodes, "edges": edges}],
+    }
+    plan["plan_id"] = _plan_id(plan)
+    change = _validate_plan(root, plan)
+    updated = _merge_memory(text, match, payload, change, str(plan["plan_id"]))
+    _write_text_atomic(target, updated)
+    rebuild_graph(root)
+    state = create_review_state(root, clean)
+    return _envelope(
+        "gamegraph_confirm_increment",
+        root,
+        "confirmed",
+        revision=state["observed_revision"],
+        facts={
+            "increment_id": increment_id,
+            "review_state": {
+                "status": state["status"],
+                "revision": state["observed_revision"],
+            },
+        },
+        next_actions=["Implement the confirmed increment and collect observable runtime evidence."],
     )
 
 
@@ -252,12 +522,22 @@ def _goal_key(goal: str) -> str:
 
 
 def _sanitize_evidence(
-    root: Path, evidence: Sequence[Mapping[str, Any]], warnings: list[str]
+    root: Path,
+    evidence: Sequence[Mapping[str, Any]],
+    warnings: list[str],
+    *,
+    current_revision: str,
 ) -> list[dict[str, Any]]:
     clean: list[dict[str, Any]] = []
-    allowed = {"path", "kind", "claim", "result", "observed_at", "tool"}
+    allowed = {"path", "kind", "claim", "result", "observed_at", "tool", "revision"}
+    evidence_kinds = {"build", "runtime", "playtest", "user_confirmation"}
     for index, raw in enumerate(evidence):
         item = {key: raw[key] for key in allowed if key in raw}
+        kind = str(item.get("kind", "")).casefold()
+        if kind not in evidence_kinds:
+            warnings.append(f"Dropped evidence item {index}: unsupported evidence kind.")
+            continue
+        item["kind"] = kind
         if "path" in item:
             relative = _relative_path(root, item["path"])
             if relative is None:
@@ -265,10 +545,15 @@ def _sanitize_evidence(
                 continue
             item["path"] = relative
             if not (root / relative).is_file():
-                warnings.append(f"Evidence path does not exist yet: {relative}")
+                warnings.append(f"Dropped evidence item {index}: evidence path does not exist.")
+                continue
         if not item.get("claim"):
             warnings.append(f"Dropped evidence item {index}: claim is required.")
             continue
+        if kind in {"playtest", "user_confirmation"} and item.get("revision") != current_revision:
+            warnings.append(
+                f"Evidence item {index} cannot validate gameplay: revision does not match."
+            )
         clean.append(item)
     return clean
 
@@ -281,50 +566,150 @@ def _plan_id(plan: Mapping[str, Any]) -> str:
 
 def review_increment(
     project_root: str | Path,
-    goal: str,
-    base_revision: str,
+    increment_id: str,
     evidence: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Review an increment and return a deterministic maintenance preview without writing."""
+    """Review a confirmed increment and return a deterministic maintenance preview."""
 
     root = _root(project_root)
-    goal = goal.strip()
-    if not goal:
-        raise ValueError("goal must not be empty")
-    indexed = _read_graph(root)
-    if indexed is None or indexed.get("revision") != base_revision:
+    increment_id = increment_id.strip()
+    if not increment_id:
+        raise ValueError("increment_id must not be empty")
+    state = reconcile_project(root)
+    active = state.get("active_increment") if state is not None else None
+    if not isinstance(active, dict) or active.get("increment_id") != increment_id:
         return _envelope(
             "gamegraph_review_increment",
             root,
-            "conflict",
-            facts={"base_revision": base_revision, "plan": None},
-            warnings=["The requested base revision is not the persisted GameGraph baseline."],
-            next_actions=["Rebuild the index, prepare the increment again, and retry review."],
+            "not_found",
+            facts={"increment_id": increment_id, "plan": None},
+            warnings=["The requested increment is not the active confirmed increment."],
+            next_actions=["Inspect the project or confirm an increment before review."],
         )
 
+    goal = str(active["goal"])
+    base_revision = str(state["baseline_revision"])
     current = build_graph(root)
-    changed = _changes(_artifact_hashes(indexed), _artifact_hashes(current))
+    changed = state.get("changes", {"added": [], "modified": [], "removed": []})
     warnings: list[str] = list(current.get("warnings", []))
-    clean_evidence = _sanitize_evidence(root, evidence, warnings)
-    if not clean_evidence:
-        warnings.append("No accepted runtime or playtest evidence was supplied.")
+    clean_evidence = _sanitize_evidence(
+        root, evidence, warnings, current_revision=current["revision"]
+    )
+    accepted_validation = [
+        item
+        for item in clean_evidence
+        if str(item.get("kind", "")).casefold() in {"playtest", "user_confirmation"}
+        and str(item.get("result", "")).casefold() == "passed"
+        and item.get("revision") == current["revision"]
+    ]
+    has_implementation_change = any(
+        path
+        for category in ("added", "modified", "removed")
+        for path in changed.get(category, [])
+        if not path.casefold().endswith(".md")
+    )
+    outcome = (
+        "validated"
+        if accepted_validation
+        else "implemented_unverified"
+        if has_implementation_change
+        else "confirmed"
+    )
+    evidence_gaps = [] if accepted_validation else list(active["acceptance_criteria"])
+    findings: list[dict[str, Any]] = []
+    if not has_implementation_change:
+        findings.append(
+            {
+                "type": "no_implementation_changes",
+                "severity": "warning",
+                "message": "No implementation artifact changed after confirmation.",
+            }
+        )
+    if clean_evidence and not accepted_validation:
+        findings.append(
+            {
+                "type": "build_is_not_gameplay",
+                "severity": "warning",
+                "message": "Build or runtime evidence alone does not validate gameplay acceptance.",
+            }
+        )
+    if evidence_gaps:
+        findings.append(
+            {
+                "type": "acceptance_evidence_missing",
+                "severity": "required",
+                "message": (
+                    "Confirmed acceptance criteria still need playtest or user confirmation."
+                ),
+                "criteria": evidence_gaps,
+            }
+        )
+        warnings.append("No accepted playtest or user-confirmation evidence was supplied.")
+    if changed.get("removed"):
+        findings.append(
+            {
+                "type": "implementation_removed",
+                "severity": "warning",
+                "paths": list(changed["removed"]),
+            }
+        )
+    if has_implementation_change:
+        findings.append(
+            {
+                "type": "documentation_revision_stale",
+                "severity": "required",
+                "message": "Implementation changed after the confirmed documentation baseline.",
+            }
+        )
+    if state.get("baseline_recovered"):
+        findings.append(
+            {
+                "type": "baseline_recovered",
+                "severity": "required",
+                "message": (
+                    "The disposable baseline was missing; confirmed intent was recovered but "
+                    "historical changed paths cannot be reconstructed."
+                ),
+            }
+        )
+    status_since = state.get("status_since")
+    if isinstance(status_since, (int, float)) and time.time() - status_since >= 86_400:
+        findings.append(
+            {
+                "type": "review_overdue",
+                "severity": "warning",
+                "message": "The confirmed increment has remained open for at least 24 hours.",
+            }
+        )
 
-    digest = _goal_key(goal)
-    feature_key = f"feature-{digest}"
-    acceptance_key = f"acceptance-{digest}"
+    feature_key = _feature_key(increment_id)
     nodes: list[dict[str, Any]] = [
-        {"key": feature_key, "kind": "feature", "label": goal, "status": "implemented"},
         {
-            "key": acceptance_key,
-            "kind": "acceptance_criterion",
-            "label": f"可观察验收：{goal}",
-            "status": "needs_evidence" if not clean_evidence else "reviewed",
-        },
+            "key": feature_key,
+            "kind": "feature",
+            "label": goal,
+            "status": "documented/current",
+            "review_outcome": outcome,
+            **active,
+        }
     ]
     edges: list[dict[str, str]] = [
-        {"source": feature_key, "target": PROJECT_MEMORY, "kind": "documents"},
-        {"source": acceptance_key, "target": feature_key, "kind": "depends_on"},
+        {"source": feature_key, "target": PROJECT_MEMORY, "kind": "documents"}
     ]
+    acceptance_keys: list[str] = []
+    for index, criterion in enumerate(active["acceptance_criteria"]):
+        key = _acceptance_key(increment_id, index)
+        acceptance_keys.append(key)
+        nodes.append(
+            {
+                "key": key,
+                "kind": "acceptance_criterion",
+                "label": criterion,
+                "status": "validated" if accepted_validation else "needs_evidence",
+                "increment_id": increment_id,
+            }
+        )
+        edges.append({"source": key, "target": feature_key, "kind": "depends_on"})
     implementation_paths = [
         path
         for category in ("added", "modified")
@@ -345,12 +730,20 @@ def review_increment(
                 "key": key,
                 "kind": "validation_evidence",
                 "label": str(item["claim"]),
-                **{field: value for field, value in item.items() if field != "claim"},
+                "evidence_kind": item["kind"],
+                **{
+                    field: value
+                    for field, value in item.items()
+                    if field not in {"claim", "kind"}
+                },
             }
         )
-        edges.append({"source": acceptance_key, "target": key, "kind": "validated_by"})
+        for acceptance_key in acceptance_keys:
+            edges.append({"source": acceptance_key, "target": key, "kind": "validated_by"})
 
     plan: dict[str, Any] = {
+        "phase": "review",
+        "increment_id": increment_id,
         "goal": goal,
         "base_revision": base_revision,
         "review_revision": current["revision"],
@@ -359,6 +752,13 @@ def review_increment(
         ],
     }
     plan["plan_id"] = _plan_id(plan)
+    record_review_result(
+        root,
+        increment_id,
+        outcome=outcome,
+        evidence_gaps=evidence_gaps,
+        plan=plan,
+    )
     return _envelope(
         "gamegraph_review_increment",
         root,
@@ -369,6 +769,9 @@ def review_increment(
             "base_revision": base_revision,
             "changes": changed,
             "evidence": clean_evidence,
+            "findings": findings,
+            "evidence_gaps": evidence_gaps,
+            "review_outcome": outcome,
             "plan": plan,
         },
         warnings=warnings,
@@ -465,6 +868,35 @@ def _render_payload(payload: Mapping[str, Any]) -> str:
     return "```json\n" + json.dumps(payload, ensure_ascii=False, indent=2) + "\n```\n"
 
 
+def _merge_memory(
+    text: str,
+    match: re.Match[str] | None,
+    payload: dict[str, Any],
+    change: Mapping[str, Any],
+    plan_id: str,
+) -> str:
+    by_key = {node.get("key"): node for node in payload["nodes"] if isinstance(node, dict)}
+    for node in change.get("nodes", []):
+        by_key[node["key"]] = node
+    payload["nodes"] = sorted(by_key.values(), key=lambda item: (item["kind"], item["key"]))
+    edge_keys = {
+        (edge.get("source"), edge.get("target"), edge.get("kind")): edge
+        for edge in payload["edges"]
+        if isinstance(edge, dict)
+    }
+    for edge in change.get("edges", []):
+        edge_keys[(edge["source"], edge["target"], edge["kind"])] = edge
+    payload["edges"] = sorted(
+        edge_keys.values(), key=lambda item: (item["source"], item["target"], item["kind"])
+    )
+    payload["applied_plans"] = sorted({*payload["applied_plans"], plan_id})
+    body = _render_payload(payload)
+    if match is None:
+        separator = "" if text.endswith("\n\n") else "\n" if text.endswith("\n") else "\n\n"
+        return text + separator + START_MARKER + "\n" + body + END_MARKER + "\n"
+    return text[: match.start("body")] + body + text[match.end("body") :]
+
+
 def _write_text_atomic(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
@@ -509,34 +941,26 @@ def apply_maintenance(
             next_actions=["Run gamegraph_review_increment again against the latest project state."],
         )
 
-    by_key = {node.get("key"): node for node in payload["nodes"] if isinstance(node, dict)}
-    for node in change.get("nodes", []):
-        by_key[node["key"]] = node
-    payload["nodes"] = sorted(by_key.values(), key=lambda item: (item["kind"], item["key"]))
-    edge_keys = {
-        (edge.get("source"), edge.get("target"), edge.get("kind")): edge
-        for edge in payload["edges"]
-        if isinstance(edge, dict)
-    }
-    for edge in change.get("edges", []):
-        edge_keys[(edge["source"], edge["target"], edge["kind"])] = edge
-    payload["edges"] = sorted(
-        edge_keys.values(), key=lambda item: (item["source"], item["target"], item["kind"])
-    )
-    payload["applied_plans"] = sorted({*payload["applied_plans"], plan_id})
-    body = _render_payload(payload)
-    if match is None:
-        separator = "" if text.endswith("\n\n") else "\n" if text.endswith("\n") else "\n\n"
-        updated = text + separator + START_MARKER + "\n" + body + END_MARKER + "\n"
-    else:
-        updated = text[: match.start("body")] + body + text[match.end("body") :]
+    updated = _merge_memory(text, match, payload, change, plan_id)
     _write_text_atomic(target, updated)
+    increment_id = str(plan.get("increment_id", ""))
+    rebuild_graph(root)
+    review_state = (
+        close_review_state(root, increment_id) if increment_id else read_review_state(root)
+    )
     return _envelope(
         "gamegraph_apply_maintenance",
         root,
         "applied",
-        facts={"plan_id": plan_id, "changed_paths": [PROJECT_MEMORY]},
-        next_actions=["Call gamegraph_rebuild_index to make the derived graph current."],
+        revision=project_revision(root),
+        facts={
+            "plan_id": plan_id,
+            "changed_paths": [PROJECT_MEMORY],
+            "review_state": (
+                review_state.get("status") if review_state is not None else "documented/current"
+            ),
+        },
+        next_actions=["Call gamegraph_prepare_increment for the next confirmed increment."],
     )
 
 

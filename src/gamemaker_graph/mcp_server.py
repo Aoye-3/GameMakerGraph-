@@ -8,8 +8,10 @@ from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
 
 from . import __version__
+from .review_state import ReviewMonitor
 from .workflow import (
     apply_maintenance,
+    confirm_increment,
     error_envelope,
     inspect_project,
     prepare_increment,
@@ -21,12 +23,13 @@ from .workflow import (
 SERVER_INSTRUCTIONS = """
 GameMakerGraph maintains source-backed project memory and next-step navigation.
 Before implementation, call gamegraph_prepare_increment and ask the user to confirm the proposed
-scope and observable acceptance. Use a separate engine or Maker MCP for implementation, building,
-running, and runtime evidence: this server never calls another MCP. After implementation, call
-gamegraph_review_increment. Show its maintenance plan to the user and call
-gamegraph_apply_maintenance only after explicit confirmation, then call gamegraph_rebuild_index.
+scope and observable acceptance, then persist that exact draft with gamegraph_confirm_increment.
+Use a separate engine or Maker MCP for implementation, building, running, and runtime evidence:
+this server never calls another MCP. Project changes automatically mark the confirmed increment as
+review_required. After implementation, call gamegraph_review_increment. Show its maintenance plan
+to the user and call gamegraph_apply_maintenance only after explicit confirmation.
 Never treat a build, screenshot, generated file, or tool call alone as proof that gameplay passed.
-This server does not use Sampling and never edits documentation silently.
+This server does not use Sampling and never confirms semantic documentation silently.
 """.strip()
 
 server = MCPServer(
@@ -44,6 +47,7 @@ MAINTENANCE = ToolAnnotations(
     idempotent_hint=True,
     open_world_hint=False,
 )
+MONITOR = ReviewMonitor()
 
 
 def _call(
@@ -52,7 +56,10 @@ def _call(
     function: Callable[[], dict[str, Any]],
 ) -> dict[str, Any]:
     try:
-        return function()
+        result = function()
+        if result.get("status") != "error":
+            MONITOR.register(project_root)
+        return result
     except Exception as exc:  # MCP boundary: every result must retain the public envelope.
         return error_envelope(operation, project_root, exc)
 
@@ -77,6 +84,19 @@ def gamegraph_prepare_increment(project_root: str, goal: str) -> dict[str, Any]:
     )
 
 
+@server.tool(title="Confirm game increment", annotations=MAINTENANCE)
+def gamegraph_confirm_increment(
+    project_root: str, expected_revision: str, draft: dict[str, Any]
+) -> dict[str, Any]:
+    """Persist one user-confirmed increment and establish its implementation baseline."""
+
+    return _call(
+        "gamegraph_confirm_increment",
+        project_root,
+        lambda: confirm_increment(project_root, expected_revision, draft),
+    )
+
+
 @server.tool(title="Query GameGraph", annotations=READ_ONLY)
 def gamegraph_query(
     project_root: str, query: str, include_code: bool = True
@@ -93,8 +113,7 @@ def gamegraph_query(
 @server.tool(title="Review game increment", annotations=READ_ONLY)
 def gamegraph_review_increment(
     project_root: str,
-    goal: str,
-    base_revision: str,
+    increment_id: str,
     evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compare an increment and preview deterministic project-memory maintenance."""
@@ -102,7 +121,7 @@ def gamegraph_review_increment(
     return _call(
         "gamegraph_review_increment",
         project_root,
-        lambda: review_increment(project_root, goal, base_revision, evidence or []),
+        lambda: review_increment(project_root, increment_id, evidence or []),
     )
 
 
@@ -131,7 +150,11 @@ def gamegraph_rebuild_index(project_root: str) -> dict[str, Any]:
 def main() -> None:
     """Run the local server over stdio."""
 
-    server.run(transport="stdio")
+    MONITOR.start()
+    try:
+        server.run(transport="stdio")
+    finally:
+        MONITOR.stop()
 
 
 if __name__ == "__main__":

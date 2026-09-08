@@ -94,6 +94,32 @@ def _manifest(root: Path) -> dict[str, str]:
     }
 
 
+def project_manifest(project_root: Path) -> dict[str, str]:
+    """Return the deterministic project-relative artifact manifest."""
+
+    root = project_root.resolve()
+    if not root.is_dir():
+        raise NotADirectoryError(root)
+    return _manifest(root)
+
+
+def project_signature(project_root: Path) -> str:
+    """Return a cheap watcher signature without hashing file contents."""
+
+    root = project_root.resolve()
+    if not root.is_dir():
+        raise NotADirectoryError(root)
+    digest = hashlib.sha256()
+    for path in _source_files(root):
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        relative = path.relative_to(root).as_posix()
+        digest.update(f"{relative}\0{stat.st_size}\0{stat.st_mtime_ns}\n".encode())
+    return "sha256:" + digest.hexdigest()
+
+
 def project_revision(project_root: Path) -> str:
     root = project_root.resolve()
     digest = hashlib.sha256()
@@ -259,7 +285,7 @@ def build_graph(project_root: Path) -> dict[str, Any]:
     warnings.extend(semantic["warnings"])
 
     return {
-        "schema_version": "0.5",
+        "schema_version": "0.6",
         "project_name": root.name,
         "project_type": "godot" if (root / "project.godot").is_file() else "generic",
         "revision": revision,

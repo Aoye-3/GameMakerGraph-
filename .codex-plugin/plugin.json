@@ -1,6 +1,6 @@
 {
   "name": "gamemaker-graph",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Persistent local game-project memory, next-step guidance, and source-backed development skills.",
   "author": {
     "name": "Aoye-3",

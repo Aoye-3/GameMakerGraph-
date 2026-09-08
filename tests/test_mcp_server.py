@@ -11,6 +11,7 @@ from gamemaker_graph.workflow import PROJECT_MEMORY
 TOOL_NAMES = {
     "gamegraph_inspect_project",
     "gamegraph_prepare_increment",
+    "gamegraph_confirm_increment",
     "gamegraph_query",
     "gamegraph_review_increment",
     "gamegraph_apply_maintenance",
@@ -44,6 +45,7 @@ def test_in_process_client_discovers_schemas_annotations_and_results(tmp_path: P
                 "goal",
             }
             assert tools["gamegraph_prepare_increment"].annotations.read_only_hint is True
+            assert tools["gamegraph_confirm_increment"].annotations.read_only_hint is False
             assert tools["gamegraph_apply_maintenance"].annotations.read_only_hint is False
             assert tools["gamegraph_apply_maintenance"].annotations.destructive_hint is False
             assert tools["gamegraph_apply_maintenance"].annotations.idempotent_hint is True
@@ -53,6 +55,20 @@ def test_in_process_client_discovers_schemas_annotations_and_results(tmp_path: P
                 "gamegraph_rebuild_index", {"project_root": str(tmp_path)}
             )
             assert rebuilt.structured_content["status"] == "current"
+
+            prepared = await client.call_tool(
+                "gamegraph_prepare_increment",
+                {"project_root": str(tmp_path), "goal": "Collect a star"},
+            )
+            confirmed = await client.call_tool(
+                "gamegraph_confirm_increment",
+                {
+                    "project_root": str(tmp_path),
+                    "expected_revision": prepared.structured_content["revision"],
+                    "draft": prepared.structured_content["facts"]["draft"],
+                },
+            )
+            assert confirmed.structured_content["status"] == "confirmed"
 
             failed = await client.call_tool(
                 "gamegraph_inspect_project", {"project_root": str(tmp_path / "missing")}
