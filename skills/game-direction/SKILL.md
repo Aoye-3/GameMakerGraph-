@@ -8,7 +8,8 @@ description: Discuss a game-specific gameplay, narrative, experience, or scope d
 Act as a concise project-aware collaborator. Preserve the creator's authorship.
 
 1. For an existing project, prefer `gamegraph_query` to obtain a current bounded context. Use
-   `gamegraph_prepare_increment` only when the discussion is becoming an implementation goal.
+   `gamegraph_prepare_increment` only when the discussion is becoming an implementation goal; after the
+   user confirms its draft, persist it with `gamegraph_confirm_increment` before implementation.
 2. Choose one primary lens and read only its reference:
    - [Gameplay](references/gameplay.md): loop, meaningful choice, challenge, balance, and progression.
    - [Experience](references/experience.md): onboarding, controls, readability, accessibility, and feedback.

@@ -11,22 +11,23 @@ GameMakerGraph 把跨会话需要保留的项目事实放在项目自己的 Mark
 2. 语义层：受控 Markdown 中已确认的玩法、状态、规则、决定、里程碑、验收和证据。
 3. 派生层：GameGraph 文件/语义关系与可选 CodeGraph 符号关系。
 
-事实流向只能是“真源或用户确认 → Markdown → rebuild → 派生图”。prepare 的候选、Agent 推断或旧
+事实流向只能是“真源或用户确认 → Markdown → 自动 rebuild → 派生图”。prepare 的候选、Agent 推断或旧
 索引不能绕过 Markdown 直接成为语义事实。
 
 ## revision 与并发
 
-revision 是规范化项目相对路径和文件内容 SHA-256 的组合。prepare 返回开发前 revision；review 用
-持久索引保存的 revision 作为基线，比较当前 artifact 哈希并生成维护计划。apply 同时校验计划内容哈希
+revision 是规范化项目相对路径和文件内容 SHA-256 的组合。prepare 返回开发前 revision；confirm 在
+用户确认后写入增量契约并保存实现基线；review 比较当前 artifact 哈希并生成维护计划。apply 校验计划内容哈希
 形成的 `plan_id` 和 review 时的 `expected_revision`。任一不匹配都零写入。
 
-重复应用已记录的 `plan_id` 返回 `unchanged`，即使调用者仍携带应用前 revision。apply 之后索引必然
-stale，直到显式 rebuild。rebuild 的输出内容相同时不替换索引文件。
+重复应用已记录的 `plan_id` 返回 `unchanged`，即使调用者仍携带应用前 revision。apply 成功后自动
+rebuild 并闭合 Review 状态。显式 rebuild 保留用于恢复，输出内容相同时不替换索引文件。
 
 ## 写入边界
 
-当前闭合世界只允许 apply 修改 `docs/development/project-memory.md` 的 GAMEGRAPH 标记区块。区块外
-标题、说明、笔记和链接保持原样。服务端不会调用 Sampling、后台任务或其他 MCP 来扩大写入范围。
+当前闭合世界只允许 confirm/apply 修改 `docs/development/project-memory.md` 的 GAMEGRAPH 标记区块。
+区块外标题、说明、笔记和链接保持原样。进程内 watcher 只维护 `.gamemakergraph/graph.json` 和
+`.gamemakergraph/review-state.json`，不会调用 Sampling 或其他 MCP，也不把推断写入 Markdown。
 
 ## Provider
 

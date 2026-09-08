@@ -1,6 +1,6 @@
 # Product Overview
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 GameMakerGraph serves local Vibe Game creators with little or no coding experience. Its product value is
 persistent project memory plus next-step navigation across Agent sessions. It is deliberately smaller than a

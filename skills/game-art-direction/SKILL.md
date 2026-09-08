@@ -21,7 +21,7 @@ Turn visual intent into a replaceable, reviewable asset plan.
    icon, dialogue nameplate, and observation/clue display, but only include slots the game actually uses.
 6. Review images for consistency, player readability, accidental discomfort, and prompt/style drift.
    Ask the creator to approve subjective choices. After assets are actually integrated and observed in the
-   running game, use `gamegraph_review_increment` to preview traceable memory changes; do not apply them
+   running game, use `gamegraph_review_increment` with the confirmed `increment_id` to preview traceable memory changes; do not apply them
    without confirmation.
 
 Never treat a successful image generation call as an integrated asset, and never silently substitute a

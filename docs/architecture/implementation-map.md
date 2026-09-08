@@ -1,12 +1,13 @@
 # Implementation Map
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 | Concept | Implementation | Verification |
 | --- | --- | --- |
 | Controlled semantic facts and stable IDs | `src/gamemaker_graph/semantic.py` | `tests/test_semantic.py` |
 | Artifact plus semantic graph | `src/gamemaker_graph/graph.py` | `tests/test_graph.py`, `tests/test_semantic.py` |
-| Revision-safe six-tool workflow | `src/gamemaker_graph/workflow.py` | `tests/test_workflow.py` |
+| Revision-safe seven-tool workflow | `src/gamemaker_graph/workflow.py` | `tests/test_workflow.py` |
+| Automatic Review monitor | `src/gamemaker_graph/review_state.py` | `tests/test_review_monitor.py` |
 | MCP SDK v2 stdio adapter | `src/gamemaker_graph/mcp_server.py` | `tests/test_mcp_server.py` |
 | Existing Core CLI | `src/gamemaker_graph/cli.py` | `tests/test_cli.py` |
 | Optional CodeGraph provider | `src/gamemaker_graph/codegraph.py` | `tests/test_codegraph_provider.py` |

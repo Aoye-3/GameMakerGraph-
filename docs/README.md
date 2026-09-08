@@ -1,6 +1,6 @@
 # GameMakerGraph Documentation
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 ## Product and architecture
 
@@ -23,6 +23,7 @@ Status: current for 0.5.0
 - [Setup](development/setup.md)
 - [Testing](development/testing.md)
 - [Project-memory template](development/project-memory.md)
+- [0.6.0 automatic document review](development/automatic-document-review-0.6.0.md)
 - [TapTap Maker loop](validation/taptap-maker-loop.md)
 
 Repository files and confirmed controlled Markdown remain authoritative; indexes are disposable.

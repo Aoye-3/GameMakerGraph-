@@ -20,13 +20,13 @@ When `.codegraph/` and CodeGraph tools are available, prefer architecture explor
 ## Workflow
 
 1. Prefer `gamegraph_inspect_project` and `gamegraph_query`; use the equivalent CLI only when the MCP is unavailable. Rebuild the disposable index when it is missing or stale and that write is in scope.
-2. Before implementation, use `gamegraph_prepare_increment` for the confirmed goal. Keep its document and acceptance suggestions as candidates until the user confirms them.
+2. Before implementation, use `gamegraph_prepare_increment`. Keep the draft as a candidate until the user confirms it, then pass the exact draft to `gamegraph_confirm_increment` before code changes.
 3. Use the MCP query result for the combined gameplay/document/code seed. Ask CodeGraph directly for deeper architecture, entry points, callers, dependencies, and tests only when the deliverable needs them.
 4. Inspect the source files that support important claims. Ask the user only when creative intent, product policy, or an architecture decision cannot be established from sources.
 5. Select the smallest document set justified by the repository. Read [references/document-system.md](references/document-system.md) when choosing or structuring multiple documents.
 6. Create or update human-owned Markdown only when requested. For post-implementation project-memory maintenance, call `gamegraph_review_increment`, show the exact plan, and call `gamegraph_apply_maintenance` only after explicit user confirmation.
 7. Cross-link gameplay concepts to scenes/data/assets and to their implementing modules or symbols. Record source paths and important unresolved relationships.
-8. After an approved maintenance apply, call `gamegraph_rebuild_index`, re-query affected areas, check local links, and report what is source-confirmed, inferred, missing, or stale.
+8. After an approved maintenance apply, verify its automatic rebuild, re-query affected areas, check local links, and report what is source-confirmed, inferred, missing, or stale.
 
 ## Documentation rules
 

@@ -1,9 +1,10 @@
 # Architecture Overview
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 `semantic.py` parses confirmed Markdown facts. `graph.py` combines them with artifact nodes in a deterministic
-derived index. `workflow.py` owns revision-safe inspect/prepare/query/review/apply/rebuild behavior.
+derived index. `review_state.py` owns active-increment baselines and the debounced monitor. `workflow.py` owns
+revision-safe inspect/prepare/confirm/query/review/apply/rebuild behavior.
 `mcp_server.py` is a thin official SDK v2 adapter. Existing CLI, documentation framework, CodeGraph provider,
 context queries, and Maker trial helpers remain available.
 

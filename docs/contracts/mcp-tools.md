@@ -9,7 +9,7 @@ schema，Python dict 作为 structured output。实现参考官方
 
 ## Envelope
 
-六个工具的成功、冲突、缺失和边界错误都返回八个固定顶层字段：`schema_version`、`operation`、
+七个工具的成功、冲突、缺失和边界错误都返回八个固定顶层字段：`schema_version`、`operation`、
 `status`、`project_root`、`revision`、`facts`、`warnings`、`next_actions`。错误不会把任意输入文件内容
 复制到 warning。
 
@@ -17,18 +17,30 @@ schema，Python dict 作为 structured output。实现参考官方
 
 | 工具 | 只读 | 说明 |
 | --- | --- | --- |
-| inspect | 是 | 文档/图/Provider/Maker marker 状态 |
-| prepare | 是 | 当前目标的事实、问题和验收候选；candidate_persistence=none |
+| inspect | 是 | 文档/图/Provider/Maker marker、活动增量和 Review 状态 |
+| prepare | 是 | 当前目标的事实与确定性 draft；candidate_persistence=none |
+| confirm | 否 | 用户确认后幂等持久化 draft，并建立实现基线 |
 | query | 是 | 当前或内存派生的局部匹配，可选 CodeGraph |
-| review | 是 | 基线与当前 artifact 差异、证据清洗、确定性计划 |
-| apply | 否 | 用户确认后唯一受控文档写入；非破坏、幂等、闭合世界 |
+| review | 是 | 已确认增量与当前 artifact 差异、证据分级、findings 和确定性计划 |
+| apply | 否 | 用户确认后受控文档写入并自动重建；非破坏、幂等、闭合世界 |
 | rebuild | 否 | 唯一派生索引写入；非破坏、幂等、闭合世界 |
 
 ## 冲突与幂等
 
-review 要求 `base_revision` 对应当前持久索引，否则返回 conflict。apply 重新计算计划哈希，并先识别已
+confirm 要求 draft 的确定性 `increment_id` 和 `expected_revision` 匹配。review 只接受活动中的已确认
+`increment_id`。apply 重新计算计划哈希，并先识别已
 应用 `plan_id`；已应用返回 unchanged。新计划只有在 `expected_revision` 等于实时 revision 时才写入。
-apply 不隐式 rebuild，以便调用者清楚看到 stale → current 的状态转换。
+apply 自动 rebuild，并将活动增量闭合为 `documented/current`。
+
+## 主动 Review
+
+MCP 进程第一次访问项目时注册 watcher。受支持文件变化经防抖后自动重建派生图，并在
+`.gamemakergraph/review-state.json` 标记 `review_required`。MCP 关闭期间的变化由下一次 inspect 同步
+发现。代码变化最多证明 `implemented_unverified`；同 revision 的 passed playtest 或
+user_confirmation 才能把结果提升为 `validated`。
+
+若派生 Review 状态被删除，inspect 从 confirmed Markdown 恢复活动增量，并明确返回
+`baseline_recovered` 警告；无法重建的历史路径不得猜测。
 
 ## 路径与秘密
 

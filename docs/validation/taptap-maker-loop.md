@@ -20,14 +20,14 @@ npx -y @taptap/maker init
 ## 验收步骤
 
 1. inspect：确认目标项目、GameGraph/CodeGraph 状态和 Maker marker。
-2. prepare：输入一个自然语言小游戏目标，记录开发前 revision。
-3. 人工确认：限定一个主要玩家动作、一个可见状态变化、一个成功结果和明确排除项。
-4. Maker：核对 live project identity，再实现并构建当前目录。
+2. prepare：输入一个自然语言小游戏目标，取得确定性 draft。
+3. 人工确认：限定一个主要玩家动作、一个可见状态变化、一个成功结果和明确排除项；调用 confirm。
+4. Maker：核对 live project identity，再实现并构建当前目录；watcher 应自动标记 review_required。
 5. 运行：在真实预览中执行玩家动作；记录动作前后状态、成功结果、重启/重试与同一运行诊断。
 6. 人工试玩：用户确认是否真的可玩、反馈是否清晰；无法试玩时结果必须是 insufficient evidence。
-7. review：提交项目相对 evidence；逐条报告 supported/failed/insufficient。
+7. review：按已确认 increment_id 提交同 revision evidence；逐条报告 supported/failed/insufficient。
 8. 维护确认：展示完整确定性 plan，用户确认后 apply。
-9. rebuild：重建后 inspect/query，要求 GameGraph 为 current，证据节点可追溯。
+9. 自动 rebuild 后 inspect/query，要求 Review 为 documented/current，证据节点可追溯。
 10. 下一步：只给出一个新的最小增量，不自动开始。
 
 ## 证据最低要求

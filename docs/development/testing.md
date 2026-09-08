@@ -1,6 +1,6 @@
 # Testing
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 Run from the repository root:
 
@@ -9,7 +9,7 @@ Run from the repository root:
 .\.venv\Scripts\python.exe -m ruff check .
 ```
 
-The suite contains small semantic/workflow tests plus MCP SDK v2 integration tests. The real stdio test starts
+The suite contains semantic/workflow tests, monitor debounce and recovery tests, plus MCP SDK v2 integration tests. The real stdio test starts
 `python -m gamemaker_graph.mcp_server`, lists all tools, calls a tool, and checks structured output. Skill and
 plugin validators are separate release gates documented in the root README.
 

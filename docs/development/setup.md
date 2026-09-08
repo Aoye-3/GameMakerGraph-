@@ -1,6 +1,6 @@
 # Development Setup
 
-Status: current for 0.5.0
+Status: current for 0.6.0
 
 Use Python 3.11+ and keep the virtual environment in the repository:
 

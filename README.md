@@ -1,4 +1,4 @@
-# GameMakerGraph 0.5.0
+# GameMakerGraph 0.6.0
 
 GameMakerGraph 是给本地 Vibe Game 开发者的“项目持续记忆 + 下一步导航”。它尤其适合不会写代码、
 或只具备少量代码经验、主要通过 Codex/Cursor/Claude 等 Agent 与游戏引擎工具协作的人。
@@ -24,24 +24,27 @@ GameMakerGraph 是给本地 Vibe Game 开发者的“项目持续记忆 + 下一
         ↓
 理解玩法、实现现状与索引新鲜度
         ↓
-准备下一步最小增量（候选，不写图）
+准备下一步最小增量（draft，不写图）
         ↓
-用户确认范围与可观察验收
+用户确认 → confirm 写入契约并建立基线
         ↓
 外部引擎 / TapTap Maker MCP 实现、构建和运行
+        ↓
+watcher 自动发现变化并标记 review_required
         ↓
 收集同一版本的运行、试玩与诊断证据
         ↓
 GameGraph review 生成确定性文档维护预览
         ↓
-用户确认 → apply 只改受控区块 → rebuild
+用户确认 → apply 只改受控区块并自动 rebuild
         ↓
 图状态 current、证据可追溯、给出下一步
 ```
 
-`prepare` 和 `review` 都只读。候选建议不会直接进入图。只有用户确认后，事实才先写入 Markdown 的
-`GAMEGRAPH:START/END` 受控区块；随后 `rebuild` 从项目真源重建索引。MCP 不会在后台静默维护文档，
-也不依赖 Sampling。
+`prepare` 和 `review` 不修改 Markdown。候选建议不会直接进入图。只有用户确认后，`confirm` 才把
+增量契约写入 `GAMEGRAPH:START/END` 受控区块。MCP 进程内 watcher 只自动维护
+`.gamemakergraph/` 派生状态和索引，不静默确认产品语义，也不依赖 Sampling。进程关闭期间的变化在
+下次 `inspect` 时补抓。
 
 ## GameGraph、CodeGraph 与 Maker 的分工
 
@@ -63,7 +66,7 @@ GameMakerGraph MCP 不直接调用 Maker MCP。Agent 在同一会话中分别调
 ## 语义模型
 
 GameGraph 保留已有 artifact 层：项目、文件、文档、标题、场景、脚本、资源、数据、配置、资产和
-revision。0.5.0 增加：
+revision。0.6.0 在既有语义模型上增加已确认增量生命周期和主动 Review 状态：
 
 - 节点：`feature`、`player_action`、`game_state`、`rule`、`milestone`、
   `acceptance_criterion`、`decision`、`issue`、`validation_evidence`；
@@ -108,13 +111,13 @@ codex mcp list --json
 [Tools 文档](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/servers/tools.md)与
 [Client transports 文档](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/client/transports.md)。
 
-## 六个 MCP 工具
+## 七个 MCP 工具
 
 所有工具返回同一 envelope：
 
 ```json
 {
-  "schema_version": "0.5",
+  "schema_version": "0.6",
   "operation": "gamegraph_query",
   "status": "current",
   "project_root": "...",
@@ -127,46 +130,48 @@ codex mcp list --json
 
 | 工具 | 输入 | 行为 |
 | --- | --- | --- |
-| `gamegraph_inspect_project` | `project_root` | 只读检查项目、文档、GameGraph、CodeGraph 与 Maker marker |
+| `gamegraph_inspect_project` | `project_root` | 检查项目、Provider、活动增量和待 Review 状态 |
 | `gamegraph_prepare_increment` | `project_root`, `goal` | 只读准备局部事实、代码上下文、问题和验收候选 |
+| `gamegraph_confirm_increment` | `project_root`, `expected_revision`, `draft` | 用户确认后幂等持久化增量契约并建立基线 |
 | `gamegraph_query` | `project_root`, `query`, `include_code=true` | 只读查询语义图，并按需组合 CodeGraph |
-| `gamegraph_review_increment` | `project_root`, `goal`, `base_revision`, `evidence=[]` | 只读比较变化、证据缺口和维护预览，生成确定性 `plan_id` |
-| `gamegraph_apply_maintenance` | `project_root`, `expected_revision`, `plan` | 非破坏、幂等，只应用已确认受控区块计划；revision 冲突拒绝 |
+| `gamegraph_review_increment` | `project_root`, `increment_id`, `evidence=[]` | 复核已确认增量、证据缺口和维护预览 |
+| `gamegraph_apply_maintenance` | `project_root`, `expected_revision`, `plan` | 幂等应用已确认计划并自动重建；revision 冲突拒绝 |
 | `gamegraph_rebuild_index` | `project_root` | 非破坏、幂等，从闭合项目文件集合重建派生索引 |
 
-前四个工具带 MCP `readOnlyHint`；后两个声明 `destructiveHint=false`、`idempotentHint=true`、
+`inspect`、`prepare`、`query`、`review` 带 MCP `readOnlyHint`；`confirm`、`apply`、`rebuild` 声明
+`destructiveHint=false`、`idempotentHint=true`、
 `openWorldHint=false`。这些 annotations 是客户端提示，不替代服务端自己的路径、revision 和计划校验。
 
 ### 示例
 
 1. `gamegraph_inspect_project("F:/games/star-runner")`
 2. `gamegraph_prepare_increment("F:/games/star-runner", "让玩家收集星星后分数增加")`
-3. 用户确认只做一个收集动作与一个可见分数变化，保存返回的 `revision`。
-4. Agent 使用独立 Maker/引擎 MCP 实现并运行。
-5. 将项目相对证据传给 review：
+3. 用户确认 draft 后，将其原样传给 `gamegraph_confirm_increment`。
+4. Agent 使用独立 Maker/引擎 MCP 实现并运行；watcher 自动标记待 Review。
+5. 将同 revision 的项目相对证据和 `increment_id` 传给 review：
 
 ```json
 {
   "project_root": "F:/games/star-runner",
-  "goal": "让玩家收集星星后分数增加",
-  "base_revision": "sha256:开发前 revision",
+  "increment_id": "increment:已确认增量 ID",
   "evidence": [
     {
       "path": "evidence/star-playtest.md",
       "kind": "playtest",
       "claim": "玩家实际碰到星星后分数从 0 变为 1",
-      "result": "passed"
+      "result": "passed",
+      "revision": "sha256:当前 GameGraph revision"
     }
   ]
 }
 ```
 
 6. 向用户展示 review 的 `facts.plan`；确认后把原计划原样传给 apply。
-7. 调用 rebuild，再 inspect；结束条件是 `status=current`、证据节点可回到项目相对来源。
+7. apply 自动 rebuild；再次 inspect 的结束条件是 Review 为 `documented/current`、图为 current、证据可追溯。
 
 ## Skills
 
-插件包含 7 个可发现 Skills，均优先调用 0.5.0 MCP，MCP 不可用时才回退 CLI：
+插件包含 7 个可发现 Skills，均优先调用 0.6.0 MCP，MCP 不可用时才回退 CLI：
 
 - [`game-project-exploration`](skills/game-project-exploration/SKILL.md)：开发前的局部项目与影响探索；
 - [`codegraph-documentation`](skills/codegraph-documentation/SKILL.md)：连接玩法文档与代码符号；
@@ -194,8 +199,9 @@ npx -y @taptap/maker init
 [TapTap instant-games-open-mcp](https://github.com/taptap/instant-games-open-mcp) 和
 [Maker 文档](https://github.com/taptap/instant-games-open-mcp/blob/main/docs/MAKER.md)。
 
-真实验收顺序是：自然语言目标 → GameGraph prepare → 用户确认 → Maker 实现/构建 → 真实预览与玩家
-操作 → 同一运行的状态/诊断证据 → GameGraph review → 用户确认 → apply → rebuild。构建成功、截图、
+真实验收顺序是：自然语言目标 → GameGraph prepare → 用户确认并 confirm → Maker 实现/构建 →
+watcher 标记待 Review → 真实预览与玩家操作 → 同一 revision 的状态/诊断证据 → GameGraph review →
+用户确认 → apply 自动 rebuild。构建成功、截图、
 文件存在或 MCP 调用成功都不能单独证明玩法通过；必须观察玩家操作导致的状态变化，并让玩家/用户确认
 体验结论。详见 [TapTap Maker 闭环验收](docs/validation/taptap-maker-loop.md)。
 
@@ -203,10 +209,11 @@ npx -y @taptap/maker init
 
 - 只接受存在的本地项目根；所有语义节点和证据路径必须是项目相对路径，拒绝绝对路径和 `..` 越界。
 - 只检查 `.maker-mcp/config.json` 是否存在，永不读取、记录或输出其内容。
-- `prepare` 与 `review` 完全只读；候选、推断和未确认创意不进入图。
-- apply 只允许维护 `docs/development/project-memory.md` 的标记区块，保留区块外人工内容。
+- `prepare` 与 `review` 不修改 Markdown；候选、推断和未确认创意不进入图。
+- watcher 只写 `.gamemakergraph/` 派生状态和索引，不能把推断提升为已确认事实。
+- confirm/apply 只允许维护 `docs/development/project-memory.md` 的标记区块，保留人工内容。
 - apply 校验确定性 `plan_id` 与 `expected_revision`；冲突零写入，重复计划返回 `unchanged`。
-- rebuild 只写 `.gamemakergraph/graph.json`，相同输入不会二次写入。
+- watcher/rebuild 只写 `.gamemakergraph/`，相同输入不会二次写入。
 - 不自动安装/初始化 CodeGraph，不读取 `.codegraph` 私有数据库。
 - 不自动调用 Maker、不登录、不创建远端应用、不上传或发布。
 
@@ -242,9 +249,9 @@ codegraph status . --json
 
 ## 路线图
 
-- 0.5.x：从真实 Maker 小游戏验收继续收紧 evidence 结构和文档维护预览。
+- 0.6.x：用真实 Maker 小游戏持续验证自动监测、主动 Review 和跨窗口恢复。
 - 后续候选：更细的语义查询排序、项目自定义闭合文档集合、更多引擎 Provider 适配。
-- 明确不在首版：PyPI 发布、自包含运行时、MCP 间转发、后台 watcher、完整美术/UI/叙事本体、
+- 明确不在当前版：PyPI 发布、自包含运行时、MCP 间转发、系统级常驻服务、完整美术/UI/叙事本体、
   图形化 Game Studio。
 
 ## 许可证

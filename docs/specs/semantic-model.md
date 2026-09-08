@@ -1,4 +1,4 @@
-# GameGraph 0.5 语义模型
+# GameGraph 0.6 语义模型
 
 ## 来源格式
 
@@ -44,6 +44,9 @@ artifact 节点继续由原生文件扫描生成，包括 document、scene、scr
 
 ## 证据
 
-证据可以记录 `kind`、`claim`、`result`、`observed_at`、`tool` 与 `path`。若有 path，它必须是项目
+证据可以记录 `kind`、`claim`、`result`、`observed_at`、`tool`、`revision` 与 `path`。若有 path，它必须是项目
 相对路径，不能是绝对路径或包含 `..`。构建日志、截图或文件存在只支持其直接声明；“玩法通过”仍需
-同一版本的实际运行、玩家输入、可观察状态变化和人工体验确认。
+同一 revision 的实际运行、玩家输入、可观察状态变化和人工体验确认。只有 `playtest` 或
+`user_confirmation` 的 passed 证据可以验证玩法；build/runtime 证据只支持其直接声明。
+输入 evidence 的 `kind` 在语义节点中保存为 `evidence_kind`，节点自身的 kind 始终是
+`validation_evidence`。

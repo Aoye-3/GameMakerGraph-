@@ -10,7 +10,8 @@ Make the project controllable before implementation without turning a small game
 1. Establish the intended player outcome, platform, smallest playable loop, explicit exclusions, and
    observable completion criteria. Keep unresolved creative facts under `To confirm`.
 2. Prefer `gamegraph_inspect_project`, then `gamegraph_prepare_increment` for the smallest playable
-   goal. Its facts and acceptance items are a preview, not confirmed memory. Use `gamegraph docs suggest`
+   goal. Its facts and acceptance items are a preview; after user confirmation, persist the exact draft with
+   `gamegraph_confirm_increment`. Use `gamegraph docs suggest`
    and `docs init` only when the MCP is unavailable or the user explicitly wants missing templates;
    initialization must preserve existing files.
 3. Decompose only independently testable systems. For each module, record responsibility, dependency,
@@ -19,7 +20,7 @@ Make the project controllable before implementation without turning a small game
    basic interaction to harder technical points, and keep data/state inspectable when that materially
    helps tuning or debugging.
 5. After implementation, use `gamegraph_review_increment`; show its maintenance plan before calling
-   `gamegraph_apply_maintenance`. After confirmation and apply, call `gamegraph_rebuild_index` and ensure
+   `gamegraph_apply_maintenance`. After confirmation and apply, verify the automatic rebuild and ensure
    project overview, gameplay rules, implementation map, setup, and testing entry points link to real sources.
 
 The developer remains responsible for product direction. Do not fabricate a world, plot, art style,

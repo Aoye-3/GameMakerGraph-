@@ -12,15 +12,15 @@ Prove that project understanding, documentation, implementation, and live verifi
    before installation, login, remote project creation, checkout, build, upload, or publish.
 2. For an initialized project, rebuild only if needed, then call `gamegraph_prepare_increment`. Confirm one
    primary player verb, one observable state change, one goal, and explicit exclusions with the user. The
-   returned candidates are not graph facts until confirmed in Markdown and re-indexed.
+   returned candidates are not graph facts until `gamegraph_confirm_increment` persists the confirmed draft.
 3. Verify the current Agent session is connected to the intended Maker project using the provider's live
    status capability. A local config marker or CLI installation is not a connection proof.
 4. Use the existing Maker MCP as the executor. GameMakerGraph never calls Maker on the Agent's behalf.
    Keep implementation to one playable loop; do not silently update project memory while coding.
 5. Run the real preview/runtime. Prove launch, input-to-state change, goal, restart, and zero blocking
    diagnostics with evidence tied to the same current run.
-6. Call `gamegraph_review_increment` with project-relative evidence. Show the plan and wait for explicit
-   confirmation before `gamegraph_apply_maintenance`; then call `gamegraph_rebuild_index`.
+6. Call `gamegraph_review_increment` with the active `increment_id` and same-revision evidence. Show the plan
+   and wait for explicit confirmation before `gamegraph_apply_maintenance`; verify its automatic rebuild.
 7. Verify GameGraph is `current`, evidence is traceable, and return the next smallest increment. Report each
    acceptance claim as supported, failed, or insufficient evidence. Leave publishing outside this validation
    unless the user separately authorizes it.

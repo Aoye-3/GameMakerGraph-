@@ -11,7 +11,8 @@ Build the smallest reliable context needed for the next development decision.
    disposable graph with `gamegraph_rebuild_index` when it is missing or stale and derived local writes
    are in scope. Fall back to the equivalent `gamegraph` CLI only when the MCP is unavailable.
 2. Before proposing an increment, call `gamegraph_prepare_increment` with the user's goal. Its questions
-   and acceptance criteria are candidates only; do not write them into project memory before confirmation.
+   and acceptance criteria are candidates only; after confirmation, pass the exact draft to
+   `gamegraph_confirm_increment` before implementation.
 3. Use the returned local facts and optional CodeGraph context to bound likely impact. When CodeGraph is
    available, use its architecture
    and symbol relations for callers, dependencies, implementations, and tests.
